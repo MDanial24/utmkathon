@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+// Deploy Trigger: 2026-05-06 - Final Fix
 import { Navbar } from "@/components/layout/Navbar";
 import { CoachFAB } from "@/components/layout/CoachFAB";
 import { SplashScreen } from "@/components/layout/SplashScreen";
