@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 const MESSAGES = [
   "Click me!", 
@@ -21,6 +21,7 @@ const MESSAGES = [
 export function CoachFAB() {
   const pathname = usePathname()
   const [msgIndex, setMsgIndex] = useState(0)
+  const constraintsRef = useRef(null)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -32,13 +33,17 @@ export function CoachFAB() {
   if (pathname === '/' || pathname === '/coach' || pathname === '/scan') return null
 
   return (
-    <motion.div 
-      drag
-      dragElastic={0.1}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className="fixed bottom-24 right-4 z-[100] cursor-grab active:cursor-grabbing flex items-center"
-    >
+    <>
+      <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[100]" />
+      <motion.div 
+        drag
+        dragConstraints={constraintsRef}
+        dragMomentum={false}
+        dragElastic={0.1}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-24 right-4 z-[100] cursor-grab active:cursor-grabbing flex items-center pointer-events-auto"
+      >
       <div className="relative">
         {/* Chat Bubble */}
         <AnimatePresence mode="wait">
@@ -69,5 +74,6 @@ export function CoachFAB() {
         </Link>
       </div>
     </motion.div>
+    </>
   )
 }
