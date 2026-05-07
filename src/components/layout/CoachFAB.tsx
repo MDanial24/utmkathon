@@ -62,7 +62,7 @@ export function CoachFAB() {
           className="block"
         >
           <img 
-            src="/assets/yun-icon.png" 
+            src="/utmkathon/assets/yun-icon.png" 
             alt="Coach" 
             className="w-28 h-28 object-contain pointer-events-none drop-shadow-[0_10px_10px_rgba(0,0,0,0.3)]"
           />

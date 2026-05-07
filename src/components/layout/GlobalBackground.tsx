@@ -22,8 +22,8 @@ export function GlobalBackground() {
   // Landing: Always Video
   // App: Dark -> Image, Light -> Video (as per previous request for lightmode)
   const showVideo = isLanding || !isDark
-  const videoSrc = isDark ? "/assets/bgm-dark.MP4" : "/assets/bgm-light.mp4"
-  const imageSrc = "/assets/img-dark.PNG"
+  const videoSrc = isDark ? "/utmkathon/assets/bgm-dark.MP4" : "/utmkathon/assets/bgm-light.mp4"
+  const imageSrc = "/utmkathon/assets/img-dark.PNG"
 
   return (
     <div className="fixed inset-0 -z-50 overflow-hidden bg-background">

@@ -58,7 +58,7 @@ export function Pet({ animation = "idle", size = 64, className }: PetProps) {
       <div 
         className="absolute w-full h-full"
         style={{
-          backgroundImage: "url('/assets/kebo/spritesheet.webp')",
+          backgroundImage: "url('/utmkathon/assets/kebo/spritesheet.webp')",
           backgroundSize: `${COLS * 100}% ${ROWS * 100}%`,
           backgroundPosition: `${xPerc}% ${yPerc}%`,
           imageRendering: "pixelated",
