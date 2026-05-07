@@ -121,7 +121,7 @@ export function AgentCommandCenter() {
         <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">{strings.agentSystemLogs}</h3>
         <div className="bg-slate-100/80 rounded-2xl p-4 border border-slate-200 font-mono text-[9px] space-y-1 h-32 overflow-hidden">
           <p className="text-emerald-500">[OK] SPENDING_SENSE: Categorized GrabFood - RM25.50</p>
-          <p className="text-blue-500">[INFO] CASHFLOW_PREDICT: Updating broke_date: 2026-05-18</p>
+          <p className="text-primary font-bold">[INFO] CASHFLOW_PREDICT: Updating broke_date: 2026-05-18</p>
           <p className="text-amber-500">[WARN] DEBT_SHIELD: New BNPL simulation detected</p>
           <p className="text-primary-400">[CMD] ORCHESTRATOR: Dispatching behavioral_nudge</p>
           <p className="text-muted-foreground">[LOG] System latency: 12ms</p>

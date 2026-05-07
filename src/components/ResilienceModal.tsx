@@ -29,7 +29,7 @@ export function ResilienceModal({ isOpen, onClose, score }: ResilienceModalProps
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-2xl z-50"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -37,7 +37,7 @@ export function ResilienceModal({ isOpen, onClose, score }: ResilienceModalProps
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50"
           >
-            <Card className="border-primary/20 shadow-2xl overflow-hidden bg-white/95 backdrop-blur">
+            <Card className="liquid-glass border-primary/20 shadow-2xl overflow-hidden">
               <div className="relative p-6 text-center space-y-6">
                 <button 
                   onClick={onClose}
@@ -60,10 +60,10 @@ export function ResilienceModal({ isOpen, onClose, score }: ResilienceModalProps
                 <div className="space-y-4 text-left">
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-medium">
-                      <span className="flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5 text-blue-500" /> {strings.resModalCashflow}</span>
-                      <span className="text-blue-600">65%</span>
+                      <span className="flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5 text-primary" /> {strings.resModalCashflow}</span>
+                      <span className="text-primary font-bold">65%</span>
                     </div>
-                    <Progress value={65} className="h-2 bg-blue-100" />
+                    <Progress value={65} className="h-2 bg-primary/10" />
                   </div>
 
                   <div className="space-y-1.5">

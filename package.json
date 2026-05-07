@@ -3,11 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 2222",
     "build": "next build",
     "start": "next start",
     "lint": "echo 'Skipping linting for build stability'"
-
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -49,25 +50,46 @@
 }
 
 :root {
-  --background: #F8FAFC;
+  --background: #FDFEFE;
   --foreground: #0F172A;
   --card: #FFFFFF;
   --card-foreground: #0F172A;
   --popover: #FFFFFF;
   --popover-foreground: #0F172A;
-  --primary: #1E3A8A;
+  --primary: #9333EA;
   --primary-foreground: #FFFFFF;
-  --secondary: #3B82F6;
+  --secondary: #C026D3;
   --secondary-foreground: #FFFFFF;
   --muted: #F1F5F9;
   --muted-foreground: #64748B;
-  --accent: #14B8A6;
+  --accent: #7C3AED;
   --accent-foreground: #FFFFFF;
   --destructive: #EF4444;
   --border: #E2E8F0;
   --input: #E2E8F0;
-  --ring: #1E3A8A;
-  --radius: 1rem;
+  --ring: #9333EA;
+  --radius: 1.25rem;
+}
+
+.dark {
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  --card: #111114;
+  --card-foreground: #FAFAFA;
+  --popover: #09090B;
+  --popover-foreground: #FAFAFA;
+  --primary: #A855F7;
+  --primary-foreground: #FFFFFF;
+  --secondary: #D946EF;
+  --secondary-foreground: #FFFFFF;
+  --muted: #1E1E24;
+  --muted-foreground: #A1A1AA;
+  --accent: #8B5CF6;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #A855F7;
 }
 
 @layer base {
@@ -75,24 +97,42 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground selection:bg-primary/30;
+    @apply bg-background text-foreground selection:bg-primary/30 transition-colors duration-500;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-@layer utilities {
-  .glass {
-    @apply bg-white/70 backdrop-blur-xl border border-slate-200/50;
-  }
-  .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)];
-  }
-  .text-glow {
-    text-shadow: 0 0 10px rgba(30, 58, 138, 0.2);
-  }
-  .neon-border {
-    box-shadow: 0 0 15px rgba(30, 58, 138, 0.15);
-  }
+@utility glass {
+  @apply bg-white/20 dark:bg-black/20 backdrop-blur-[40px] border border-white/30 dark:border-white/10 shadow-2xl;
+}
+
+@utility glass-card {
+  @apply bg-white/30 dark:bg-zinc-900/40 backdrop-blur-[50px] border border-white/40 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)];
+}
+
+@utility liquid-glass {
+  @apply bg-white/30 dark:bg-zinc-900/40 backdrop-blur-[50px] border border-white/40 dark:border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] relative overflow-hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.05) 100%);
+}
+
+@utility text-glow {
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+@utility neon-border {
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.25);
+}
+
+.dark .liquid-glass {
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%);
+}
+
+.dark .text-glow {
+  text-shadow: 0 0 30px rgba(168, 85, 247, 0.7);
+}
+
+.global-video-bg {
+  @apply fixed inset-0 w-full h-full object-cover -z-50 pointer-events-none;
 }
 
 /* Custom Scrollbar */

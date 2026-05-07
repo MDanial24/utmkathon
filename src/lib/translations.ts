@@ -8,6 +8,7 @@ type Translations = {
     navSave: string
     navReports: string
     navPay: string
+    navCards: string
 
     // Dashboard
     dashGreeting: string
@@ -137,6 +138,7 @@ export const t: Translations = {
     navSave: "Save",
     navReports: "Reports",
     navPay: "PAY",
+    navCards: "Cards",
 
     dashGreeting: "Hi",
     dashStatus: "Status",
@@ -257,6 +259,7 @@ export const t: Translations = {
     navSave: "Simpan",
     navReports: "Laporan",
     navPay: "BAYAR",
+    navCards: "Kad",
 
     dashGreeting: "Hai",
     dashStatus: "Status",

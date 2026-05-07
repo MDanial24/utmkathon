@@ -4,14 +4,17 @@ import { useStore } from "@/store/useStore"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
-import { User, Bell, Shield, Wallet, CircleHelp, LogOut, ChevronRight, AlertTriangle, Globe } from "lucide-react"
+import { useTheme } from "next-themes"
+import { Moon, Sun, User, Bell, Shield, Wallet, CircleHelp, LogOut, ChevronRight, AlertTriangle, Globe } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { t } from "@/lib/translations"
+import { Button } from "@/components/ui/button"
 
 export function Settings() {
   const { user, language, setLanguage } = useStore()
+  const { theme, setTheme } = useTheme()
   const router = useRouter()
   const strings = t[language]
   const [showLogout, setShowLogout] = useState(false)
@@ -51,6 +54,27 @@ export function Settings() {
           <h3 className="text-[10px] uppercase font-bold text-muted-foreground px-2 tracking-widest">{strings.settingsPreferences}</h3>
           <Card className="glass-card">
             <CardContent className="p-0">
+              {/* Theme Toggle */}
+              <div className="p-4 flex items-center justify-between border-b border-slate-200">
+                <div className="flex items-center gap-3">
+                  {theme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                  <span className="text-xs font-medium">{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                  <button 
+                    onClick={() => setTheme('light')}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${theme === 'light' ? 'bg-white text-primary shadow-sm' : 'text-slate-500'}`}
+                  >
+                    LIGHT
+                  </button>
+                  <button 
+                    onClick={() => setTheme('dark')}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${theme === 'dark' ? 'bg-white text-primary shadow-sm' : 'text-slate-500'}`}
+                  >
+                    DARK
+                  </button>
+                </div>
+              </div>
               <div className="p-4 flex items-center justify-between border-b border-slate-200">
                 <div className="flex items-center gap-3">
                   <Globe className="w-4 h-4 text-indigo-500" />
@@ -94,7 +118,7 @@ export function Settings() {
           <Card className="glass-card">
             <CardContent className="p-0">
               {[
-                { icon: Wallet, label: strings.settingsPaymentMethods, color: "text-blue-500" },
+                { icon: Wallet, label: strings.settingsPaymentMethods, color: "text-primary" },
                 { icon: User, label: strings.settingsProfile, color: "text-primary" },
                 { icon: CircleHelp, label: strings.settingsHelp, color: "text-amber-500" },
               ].map((item, i) => (
@@ -140,7 +164,7 @@ export function Settings() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => !isLoggingOut && setShowLogout(false)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-2xl z-50"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -148,8 +172,8 @@ export function Settings() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50"
             >
-              <Card className="border-rose-500/20 shadow-2xl max-w-sm mx-auto overflow-hidden">
-                <CardContent className="p-6 text-center space-y-6 bg-white/95 backdrop-blur">
+              <Card className="liquid-glass border-rose-500/20 shadow-2xl max-w-sm mx-auto overflow-hidden">
+                <CardContent className="p-6 text-center space-y-6">
                   <div className="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-2">
                     <LogOut className="w-8 h-8 ml-1" />
                   </div>
@@ -182,13 +206,5 @@ export function Settings() {
         )}
       </AnimatePresence>
     </div>
-  )
-}
-
-function Button({ children, className, variant, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string }) {
-  return (
-    <button className={`flex items-center justify-center ${className}`} {...props}>
-      {children}
-    </button>
   )
 }

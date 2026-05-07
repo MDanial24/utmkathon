@@ -5,6 +5,8 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { CoachFAB } from "@/components/layout/CoachFAB";
 import { SplashScreen } from "@/components/layout/SplashScreen";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { GlobalBackground } from "@/components/layout/GlobalBackground";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1E3A8A",
+  themeColor: "#A855F7",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -36,16 +38,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-background text-foreground min-h-screen selection:bg-primary/30`}>
-        <main className="min-h-screen">
-          <SplashScreen />
-          {children}
-        </main>
-        <CoachFAB />
-        <Navbar />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <GlobalBackground />
+          <main className="min-h-screen">
+            <SplashScreen />
+            {children}
+          </main>
+          <CoachFAB />
+          <Navbar />
+        </ThemeProvider>
       </body>
-
     </html>
   );
 }

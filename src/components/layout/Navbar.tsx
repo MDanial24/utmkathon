@@ -18,7 +18,7 @@ export function Navbar() {
 
   const leftNavItems = [
     { icon: Home, label: strings.navHome, href: "/dashboard" },
-    { icon: Zap, label: strings.navAgents, href: "/agents" },
+    { icon: CreditCard, label: strings.navCards, href: "/cards" },
   ]
 
   const rightNavItems = [
@@ -27,7 +27,7 @@ export function Navbar() {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-slate-200 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/60 dark:bg-background/40 backdrop-blur-xl border-t border-border pb-safe">
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {/* Left Items */}
         <div className="flex justify-around items-center w-2/5">

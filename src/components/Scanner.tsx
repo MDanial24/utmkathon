@@ -54,7 +54,7 @@ export function Scanner() {
           <motion.div 
             animate={{ y: [0, 250, 0] }} 
             transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-            className="w-full h-1 bg-primary shadow-[0_0_15px_#1E3A8A]"
+            className="w-full h-1 bg-primary shadow-[0_0_15px_#A855F7]"
           />
         </div>
       </div>
