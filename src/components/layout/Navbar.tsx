@@ -27,7 +27,7 @@ export function Navbar() {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/60 dark:bg-background/40 backdrop-blur-xl border-t border-border pb-safe">
+    <nav className="fixed bottom-4 left-4 right-4 z-50 bg-background/60 dark:bg-background/40 backdrop-blur-xl border border-border rounded-2xl shadow-lg">
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {/* Left Items */}
         <div className="flex justify-around items-center w-2/5">

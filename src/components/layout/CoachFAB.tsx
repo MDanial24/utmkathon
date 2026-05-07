@@ -34,12 +34,14 @@ export function CoachFAB() {
 
   return (
     <>
-      <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[100]" />
+      {/* Hidden constraint boundary */}
+      <div ref={constraintsRef} className="fixed inset-0 top-20 bottom-24 pointer-events-none" />
+      
       <motion.div 
         drag
         dragConstraints={constraintsRef}
-        dragMomentum={false}
         dragElastic={0.1}
+        dragTransition={{ power: 0.2, timeConstant: 200 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className="fixed bottom-24 right-4 z-[100] cursor-grab active:cursor-grabbing flex items-center pointer-events-auto"
