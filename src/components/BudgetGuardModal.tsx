@@ -7,12 +7,12 @@ import { Shield, AlertTriangle, CheckCircle2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useState } from "react"
 
-export function BudgetGuardModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-  const { toggleBudgetGuard, safeDailySpend } = useStore()
+export function SpendGuardModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+  const { toggleSpendGuard, safeDailySpend } = useStore()
   const [isSuccess, setIsSuccess] = useState(false)
 
   const handleActivate = () => {
-    toggleBudgetGuard()
+    toggleSpendGuard()
     setIsSuccess(true)
     setTimeout(() => {
       setIsSuccess(false)
@@ -35,9 +35,9 @@ export function BudgetGuardModal({ isOpen, onClose }: { isOpen: boolean, onClose
               <Shield className="w-8 h-8" />
             </div>
             <div className="text-center space-y-2">
-              <h2 className="text-xl font-bold">Activate Budget Guard?</h2>
+              <h2 className="text-xl font-bold">Activate Spend Guard?</h2>
               <p className="text-xs text-muted-foreground">
-                Activating Budget Guard will reduce your daily limit to <span className="text-slate-900 font-bold">RM 15.00</span> and lock non-essential categories until your next allowance.
+                Activating Spend Guard will reduce your daily limit to <span className="text-slate-900 font-bold">RM 15.00</span> and lock non-essential categories until your next allowance.
               </p>
             </div>
             <div className="space-y-3">

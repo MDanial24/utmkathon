@@ -8,7 +8,7 @@ import { motion } from "framer-motion"
 import { TrendingUp, AlertTriangle, ShieldCheck, Wallet, Calendar, Settings as SettingsIcon, QrCode, Send, History } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
-import { BudgetGuardModal } from "./BudgetGuardModal"
+import { SpendGuardModal } from "./BudgetGuardModal"
 import { ResilienceModal } from "./ResilienceModal"
 import Link from "next/link"
 import { t } from "@/lib/translations"
@@ -188,7 +188,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      <BudgetGuardModal 
+      <SpendGuardModal 
         isOpen={showGuardModal} 
         onClose={() => setShowGuardModal(false)} 
       />

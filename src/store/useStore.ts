@@ -49,12 +49,15 @@ interface ResilienceState {
   debtRiskScore: number;
   cashflowRisk: 'low' | 'medium' | 'high';
   safeDailySpend: number;
-  isBudgetGuardActive: boolean;
+  isSpendGuardActive: boolean;
   isSurvivalModeActive: boolean;
+  pet: {
+    message: string;
+  };
   
   // Actions
   addTransaction: (t: Transaction) => void;
-  toggleBudgetGuard: () => void;
+  toggleSpendGuard: () => void;
   toggleSurvivalMode: () => void;
   updateResilienceScore: () => void;
   setLanguage: (lang: Language) => void;
@@ -87,21 +90,24 @@ export const useStore = create<ResilienceState>((set, get) => ({
   agents: [
     { id: 'orch', name: 'Orchestrator Agent', status: 'idle', latestFinding: 'System nominal. Monitoring cashflow.', confidence: 0.99, recommendedAction: 'No action needed', tools: ['monitor_all', 'dispatch'] },
     { id: 'spend', name: 'Spending Sense Agent', status: 'alert', latestFinding: 'Food spending is 15% above average.', confidence: 0.92, recommendedAction: 'Limit GrabFood to RM15/day', tools: ['analyze_category', 'detect_anomaly'] },
-    { id: 'cash', name: 'Cashflow Prediction Agent', status: 'alert', latestFinding: 'Predicted broke date: 18 May', confidence: 0.87, recommendedAction: 'Activate Budget Guard', tools: ['predict_cashflow', 'calculate_safe_daily_spend'] },
+    { id: 'cash', name: 'Cashflow Prediction Agent', status: 'alert', latestFinding: 'Predicted broke date: 18 May', confidence: 0.87, recommendedAction: 'Activate Spend Guard', tools: ['predict_cashflow', 'calculate_safe_daily_spend'] },
     { id: 'debt', name: 'Debt Shield Agent', status: 'idle', latestFinding: 'No new debt detected.', confidence: 0.95, recommendedAction: 'Continue monitoring', tools: ['scan_bnpl', 'check_installments'] },
   ],
   resilienceScore: 68,
   debtRiskScore: 45,
   cashflowRisk: 'medium',
   safeDailySpend: 18.5,
-  isBudgetGuardActive: false,
+  isSpendGuardActive: false,
   isSurvivalModeActive: false,
+  pet: {
+    message: 'Stay focused!'
+  },
 
   addTransaction: (t) => set((state) => ({ 
     transactions: [t, ...state.transactions],
     user: { ...state.user, currentBalance: state.user.currentBalance - (t.type === 'expense' ? t.amount : -t.amount) }
   })),
-  toggleBudgetGuard: () => set((state) => ({ isBudgetGuardActive: !state.isBudgetGuardActive })),
+  toggleSpendGuard: () => set((state) => ({ isSpendGuardActive: !state.isSpendGuardActive })),
   toggleSurvivalMode: () => set((state) => ({ isSurvivalModeActive: !state.isSurvivalModeActive })),
   updateResilienceScore: () => {
     // Logic to recalculate based on state
