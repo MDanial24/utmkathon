@@ -7,6 +7,7 @@ import { CheckCircle2, DollarSign, Wallet, ArrowUpCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState } from "react"
 import { t } from "@/lib/translations"
+import { cn } from "@/lib/utils"
 
 export function TopUpModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const { addTransaction, language } = useStore()
@@ -71,39 +72,67 @@ export function TopUpModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =
               </div>
 
               {/* Amount Input */}
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">RM</span>
-                <Input 
-                  type="number" 
-                  placeholder="0.00" 
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="pl-12 h-14 text-2xl font-black text-slate-900 bg-white border-slate-200 rounded-2xl placeholder:text-slate-200 focus-visible:ring-emerald-500 transition-all"
-                />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 block">
+                  Top Up Amount
+                </label>
+                <div className="relative group">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground/30 text-xl">RM</span>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    placeholder="0.00" 
+                    value={amount}
+                    onKeyDown={(e) => {
+                      if (['-', 'e', '+'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || parseFloat(val) >= 0) {
+                        setAmount(val);
+                      }
+                    }}
+                    className="pl-14 h-20 text-4xl font-black text-emerald-500 bg-foreground/5 border-border rounded-3xl placeholder:text-muted-foreground/10 focus-visible:ring-emerald-500/50 transition-all shadow-inner text-center pr-4"
+                  />
+                  <div className="absolute inset-0 rounded-3xl border border-emerald-500/0 group-focus-within:border-emerald-500/30 transition-colors pointer-events-none" />
+                </div>
               </div>
 
               {/* Quick Fill Chips */}
-              <div className="flex justify-between gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {quickFills.map((val) => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => handleQuickFill(val)}
-                    className="flex-1 py-2 text-xs font-semibold rounded-xl bg-slate-100 border border-slate-200 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all"
+                    className={cn(
+                      "py-3 text-[10px] font-black rounded-xl border transition-all active:scale-95",
+                      amount === val.toString()
+                        ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                        : "bg-foreground/5 border-border text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/20"
+                    )}
                   >
-                    +RM {val}
+                    +{val}
                   </button>
                 ))}
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 h-12 rounded-2xl font-bold text-muted-foreground" 
+                  onClick={onClose}
+                >
+                  Cancel
+                </Button>
                 <Button 
                   disabled={!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0}
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold"
+                  className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
                   onClick={handleTopUp}
                 >
-                  Top Up
+                  Confirm Top Up
                 </Button>
               </div>
             </motion.div>

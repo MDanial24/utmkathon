@@ -24,7 +24,7 @@ const AGENTS = [
 interface ChatAction {
   id: string;
   label: string;
-  type: 'create_pocket' | 'postpone' | 'prioritize_emergency';
+  type: 'create_pocket' | 'postpone' | 'prioritize_emergency' | 'transfer';
   payload?: any;
 }
 
@@ -76,6 +76,9 @@ export function Coach() {
       case 'prioritize_emergency':
         responseText = "I've noted your focus on the Emergency Fund. Your safety net is your priority.";
         break;
+      case 'transfer':
+        responseText = `Transaction complete! I've successfully transferred RM ${action.payload.amount} to ${action.payload.recipient}. Your transaction ID is TXN-${Math.floor(Math.random()*1000000)}.`;
+        break;
     }
 
     setMessages(prev => [
@@ -103,6 +106,7 @@ export function Coach() {
       const triggerSave = textToSubmit.includes("save") || textToSubmit.includes("goal") || textToSubmit.includes("fund") || textToSubmit.includes("laptop") || textToSubmit.includes("emergency")
       const triggerDebt = textToSubmit.includes("debt") || textToSubmit.includes("bnpl") || textToSubmit.includes("loan") || textToSubmit.includes("risk") || textToSubmit.includes("credit")
       const triggerBills = textToSubmit.includes("bill") || textToSubmit.includes("rent") || textToSubmit.includes("autopay") || textToSubmit.includes("commitment") || textToSubmit.includes("lock") || textToSubmit.includes("protected")
+      const triggerTransfer = textToSubmit.includes("transfer") || textToSubmit.includes("pay") || textToSubmit.includes("send") || textToSubmit.includes("to")
 
       if (triggerFinance || (!triggerGrowth && !triggerSave && !triggerDebt && !triggerBills)) {
         responses.push({
@@ -193,6 +197,35 @@ export function Coach() {
           content: `You have RM ${lockedAmount.toFixed(2)} protected for bills. ${nextBill ? `Your next bill is ${nextBill.name} due soon.` : 'No upcoming bills detected.'} Protecting your bill money early is why your spendable balance might look lower than your total balance.`
         })
       }
+      
+      if (triggerTransfer) {
+        responses.push({
+          role: 'assistant',
+          agent: 'Finance Strategist',
+          content: "I can help with that. I've prepared a transfer proposal based on your recent activity. Review the details below:",
+          proposal: {
+            name: 'Transfer to Aizat',
+            type: 'transfer',
+            amount: 50,
+            recipient: 'Aizat',
+            bank: 'Public Bank',
+            icon: '💸'
+          },
+          actions: [
+            {
+              id: 'approve_transfer',
+              label: 'Approve & Send',
+              type: 'transfer',
+              payload: { amount: 50, recipient: 'Aizat' }
+            },
+            {
+              id: 'postpone_transfer',
+              label: 'Decline',
+              type: 'postpone'
+            }
+          ]
+        })
+      }
       setMessages([...newMessages, ...responses])
       setIsThinking(false)
     }, 1500)
@@ -202,11 +235,12 @@ export function Coach() {
     { text: "What is my safe daily spend?", icon: Brain, color: "text-amber-500" },
     { text: "How to save for a laptop?", icon: Target, color: "text-emerald-500" },
     { text: "How to limit impulse buys?", icon: Shield, color: "text-purple-500" },
-    { text: "Should I invest in crypto?", icon: TrendingUp, color: "text-blue-500" }
+    { text: "Should I invest in crypto?", icon: TrendingUp, color: "text-blue-500" },
+    { text: "Pay RM 50 to Aizat", icon: Send, color: "text-primary" }
   ]
 
   return (
-    <div className="flex flex-col h-[100dvh] max-w-lg mx-auto overflow-hidden bg-slate-50/50 dark:bg-background">
+    <div className="fixed inset-0 flex flex-col max-w-lg mx-auto overflow-hidden bg-slate-50/50 dark:bg-background z-50">
       {/* Top Header */}
       <header className="p-4 bg-background/80 backdrop-blur-md border-b border-border shadow-sm z-20 shrink-0">
         <div className="flex justify-between items-center">
@@ -237,7 +271,7 @@ export function Coach() {
       {/* Chat Area */}
       <div className="flex-1 overflow-hidden relative flex flex-col">
         <ScrollArea ref={scrollRef} className="flex-1 px-4">
-          <div className="space-y-6 py-6 h-full">
+          <div className="space-y-6 py-6 min-h-full">
 
             <AnimatePresence mode="wait">
               {messages.length === 0 ? (
@@ -333,35 +367,49 @@ export function Coach() {
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2">
                                           <p className="text-xs font-bold text-white">{m.proposal.name}</p>
-                                          {m.proposal.mode === 'growth' && (
-                                            <Badge className="text-[7px] h-3 bg-primary/20 text-primary border-primary/20 px-1 font-black">
-                                              Managed
-                                            </Badge>
-                                          )}
+                                          <Badge className="text-[7px] h-3 bg-primary/20 text-primary border-primary/20 px-1 font-black">
+                                            {m.proposal.type === 'transfer' ? 'Verified' : 'Managed'}
+                                          </Badge>
                                         </div>
                                         <div className="flex items-center justify-between mt-0.5">
-                                          <p className="text-[9px] text-muted-foreground">RM {m.proposal.current} / RM {m.proposal.target}</p>
-                                          <span className="text-[9px] text-emerald-500 font-bold">+4.2% p.a.</span>
+                                          {m.proposal.type === 'transfer' ? (
+                                            <p className="text-[9px] text-muted-foreground">{m.proposal.bank} • 3188 **** 1100</p>
+                                          ) : (
+                                            <p className="text-[9px] text-muted-foreground">RM {m.proposal.current} / RM {m.proposal.target}</p>
+                                          )}
+                                          <span className="text-[9px] text-emerald-500 font-bold">
+                                            {m.proposal.type === 'transfer' ? 'Instant' : '+4.2% p.a.'}
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
                                     
-                                    <div className="space-y-1.5">
-                                      <div className="flex justify-between items-center text-[9px]">
-                                        <span className="text-primary/80 font-bold capitalize">({m.proposal.riskLevel} Risk)</span>
-                                        <span className="font-bold text-primary">{Math.round((m.proposal.current / m.proposal.target) * 100)}%</span>
+                                    {m.proposal.type !== 'transfer' && (
+                                      <div className="space-y-1.5">
+                                        <div className="flex justify-between items-center text-[9px]">
+                                          <span className="text-primary/80 font-bold capitalize">({m.proposal.riskLevel} Risk)</span>
+                                          <span className="font-bold text-primary">{Math.round((m.proposal.current / m.proposal.target) * 100)}%</span>
+                                        </div>
+                                        <div className="h-1 w-full bg-primary/10 rounded-full overflow-hidden">
+                                          <div 
+                                            className="h-full bg-primary" 
+                                            style={{ width: `${(m.proposal.current / m.proposal.target) * 100}%` }}
+                                          />
+                                        </div>
                                       </div>
-                                      <div className="h-1 w-full bg-primary/10 rounded-full overflow-hidden">
-                                        <div 
-                                          className="h-full bg-primary" 
-                                          style={{ width: `${(m.proposal.current / m.proposal.target) * 100}%` }}
-                                        />
+                                    )}
+
+                                    {m.proposal.type === 'transfer' && (
+                                      <div className="flex justify-between items-center text-[9px] py-1">
+                                        <span className="text-muted-foreground">Amount to send</span>
+                                        <span className="text-white font-bold">RM {m.proposal.amount.toFixed(2)}</span>
                                       </div>
-                                    </div>
+                                    )}
 
                                     <div className="flex justify-between items-center pt-2 border-t border-white/5">
                                       <span className="text-[8px] text-emerald-500 font-bold flex items-center gap-1">
-                                        <TrendingUp className="w-2 h-2" /> Growth Enabled
+                                        {m.proposal.type === 'transfer' ? <Send className="w-2 h-2" /> : <TrendingUp className="w-2 h-2" />}
+                                        {m.proposal.type === 'transfer' ? 'Security Cleared' : 'Growth Enabled'}
                                       </span>
                                       <span className="text-[8px] text-primary font-bold uppercase tracking-wider">Proposal Preview</span>
                                     </div>
@@ -378,7 +426,7 @@ export function Coach() {
                                     onClick={() => handleAction(action)}
                                     className={cn(
                                       "flex-1 text-[10px] font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95 text-center",
-                                      action.type === 'create_pocket' 
+                                      (action.type === 'create_pocket' || action.type === 'transfer')
                                         ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20" 
                                         : "bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20"
                                     )}
@@ -414,52 +462,51 @@ export function Coach() {
             </AnimatePresence>
           </div>
         </ScrollArea>
+      </div>
 
-        {/* Sticky Chat Input Area */}
-        <div className="bg-background/80 backdrop-blur-xl border-t border-border/50 p-4 space-y-3 shrink-0 z-20">
-          <AnimatePresence>
-            {messages.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <ScrollArea className="w-full whitespace-nowrap pb-2">
-                  <div className="flex gap-2 px-1">
-                    {[strings.coachChipLimit, strings.coachChipSafe, strings.coachChipSave].map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        disabled={isThinking}
-                        onClick={() => sendMessage(suggestion)}
-                        className="inline-flex items-center rounded-full bg-white dark:bg-white/5 px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-colors border border-slate-200 dark:border-white/10 shrink-0 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="relative group">
-            <Input
-              placeholder={isThinking ? "Wait for the council..." : strings.coachInputPlaceholder}
-              disabled={isThinking}
-              className="pr-12 bg-white dark:bg-zinc-900/50 border-slate-200 dark:border-white/10 h-12 rounded-2xl text-xs shadow-sm focus:ring-primary/20 disabled:bg-slate-50 dark:disabled:bg-white/5"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            />
-            <Button
-              size="icon"
-              disabled={isThinking || !input.trim()}
-              className="absolute right-1 top-1 w-10 h-10 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 transition-all active:scale-95 disabled:grayscale disabled:opacity-50"
-              onClick={() => sendMessage()}
+      {/* Sticky Chat Input Area — OUTSIDE the scroll container so it never disappears */}
+      <div className="bg-background/80 backdrop-blur-xl border-t border-border/50 p-4 pb-safe space-y-3 shrink-0 z-20">
+        <AnimatePresence>
+          {messages.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
             >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {[strings.coachChipLimit, strings.coachChipSafe, strings.coachChipSave, "Pay RM 50 to Aizat"].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    disabled={isThinking}
+                    onClick={() => sendMessage(suggestion)}
+                    className="inline-flex items-center rounded-full bg-white dark:bg-white/5 px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-colors border border-slate-200 dark:border-white/10 shrink-0 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="relative group">
+          <Input
+            placeholder={isThinking ? "Wait for the council..." : strings.coachInputPlaceholder}
+            disabled={isThinking}
+            className="pr-12 bg-white dark:bg-zinc-900/50 border-slate-200 dark:border-white/10 h-12 rounded-2xl text-xs shadow-sm focus:ring-primary/20 disabled:bg-slate-50 dark:disabled:bg-white/5"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+          />
+          <Button
+            size="icon"
+            disabled={isThinking || !input.trim()}
+            className="absolute right-1 top-1 w-10 h-10 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 transition-all active:scale-95 disabled:grayscale disabled:opacity-50"
+            onClick={() => sendMessage()}
+          >
+            <Send className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </div>

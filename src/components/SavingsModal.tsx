@@ -138,8 +138,19 @@ export function SavingsModal({ isOpen, onClose, editPocket }: SavingsModalProps)
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm pointer-events-none">RM</span>
                 <Input
                   type="number"
+                  min="0"
                   value={target}
-                  onChange={(e) => setTarget(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (['-', 'e', '+'].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || parseFloat(val) >= 0) {
+                      setTarget(val);
+                    }
+                  }}
                   placeholder="0.00"
                   className="bg-white/5 border-white/10 h-11 rounded-2xl pl-10 font-bold text-base"
                 />

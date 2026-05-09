@@ -368,7 +368,9 @@ export function Dashboard() {
       <div className="space-y-3">
         <div className="flex justify-between items-center px-1">
           <h3 className="text-sm font-semibold">{strings.sectionRecent}</h3>
-          <button className="text-[10px] text-primary uppercase font-bold tracking-wider">{strings.viewAll}</button>
+          <Link href="/transactions">
+            <button className="text-[10px] text-primary uppercase font-bold tracking-wider hover:opacity-70 transition-opacity">{strings.viewAll}</button>
+          </Link>
         </div>
         <Card className="glass-card">
           <CardContent className="p-0">
