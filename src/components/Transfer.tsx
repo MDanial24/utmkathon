@@ -47,44 +47,44 @@ export function Transfer() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col max-w-lg mx-auto">
-      <header className="bg-white px-4 pt-safe pb-4 sticky top-0 z-50 border-b border-slate-200">
+    <div className="min-h-screen bg-background flex flex-col max-w-lg mx-auto pb-32">
+      <header className="bg-background/80 backdrop-blur-md px-4 pt-safe pb-4 sticky top-0 z-50 border-b border-border">
         <div className="flex items-center gap-3 pt-4">
           <Link href="/dashboard">
-            <Button variant="ghost" size="icon" className="text-slate-600 rounded-full hover:bg-slate-100">
+            <Button variant="ghost" size="icon" className="text-foreground/60 rounded-full hover:bg-foreground/5">
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-lg font-bold text-slate-900">Transfer</h1>
+          <h1 className="text-lg font-bold text-foreground">Transfer</h1>
         </div>
       </header>
 
       <main className="flex-1 p-4 space-y-6">
         
         {/* Recipient Mock */}
-        <Card className="bg-white border-slate-200 shadow-sm rounded-2xl">
+        <Card className="glass-card border-border shadow-sm rounded-2xl">
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+            <div className="w-12 h-12 rounded-full bg-foreground/5 flex items-center justify-center text-muted-foreground shrink-0">
               <User className="w-6 h-6" />
             </div>
             <div>
-              <p className="font-bold text-slate-900">Ahmad Ali</p>
-              <p className="text-xs text-slate-500">Maybank • 1622 **** 8899</p>
+              <p className="font-bold text-foreground">Ahmad Ali</p>
+              <p className="text-xs text-muted-foreground">Maybank • 1622 **** 8899</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Amount Input */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Amount</p>
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Amount</p>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-slate-400">RM</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground/40">RM</span>
             <Input 
               type="number" 
               placeholder="0.00" 
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="pl-14 h-20 text-4xl font-black text-slate-900 bg-white border-slate-200 rounded-2xl placeholder:text-slate-200 focus-visible:ring-primary focus-visible:border-primary transition-all"
+              className="pl-14 h-20 text-4xl font-black text-foreground bg-foreground/5 border-border rounded-3xl placeholder:text-muted-foreground/20 focus-visible:ring-primary focus-visible:border-primary transition-all shadow-inner"
             />
           </div>
         </div>
@@ -130,29 +130,42 @@ export function Transfer() {
 
         {/* Ref Input */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Reference</p>
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Reference</p>
           <Input 
             placeholder="e.g. Dinner yesterday" 
-            className="h-14 bg-white border-slate-200 rounded-2xl"
+            className="h-14 bg-foreground/5 border-border rounded-2xl"
           />
         </div>
 
       </main>
 
-      {/* Footer Action */}
-      <div className="p-4 bg-white border-t border-slate-200 pb-safe">
-        <Button 
-          onClick={handleTransfer}
-          disabled={!amount || isProcessing || hasInsufficientBalance}
-          className={`w-full h-14 font-bold rounded-2xl shadow-xl flex gap-2 justify-center items-center ${
-            hasInsufficientBalance 
-              ? "bg-rose-500 hover:bg-rose-600 text-white cursor-not-allowed" 
-              : "bg-primary hover:bg-primary/90 text-white"
-          }`}
-        >
-          {isProcessing ? "Processing..." : hasInsufficientBalance ? "Insufficient Balance" : "Transfer Now"} 
-          {!hasInsufficientBalance && <Send className="w-4 h-4 ml-2" />}
-        </Button>
+      {/* Footer Action - Positioned above floating Navbar */}
+      <div className="fixed bottom-24 left-0 right-0 p-4 z-40 bg-gradient-to-t from-background via-background/80 to-transparent pb-8">
+        <div className="max-w-lg mx-auto">
+          <Button 
+            onClick={handleTransfer}
+            disabled={!amount || isProcessing || hasInsufficientBalance}
+            className={`w-full h-16 font-bold rounded-2xl shadow-2xl flex gap-2 justify-center items-center transition-all active:scale-95 ${
+              hasInsufficientBalance 
+                ? "bg-rose-500 hover:bg-rose-600 text-white cursor-not-allowed" 
+                : "bg-primary hover:bg-primary/90 text-white shadow-primary/30"
+            }`}
+          >
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Processing...
+              </span>
+            ) : hasInsufficientBalance ? (
+              "Insufficient Balance"
+            ) : (
+              <>
+                Transfer Now
+                <Send className="w-4 h-4 ml-2" />
+              </>
+            )} 
+          </Button>
+        </div>
       </div>
     </div>
   )

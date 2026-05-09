@@ -89,14 +89,14 @@ export function Coach() {
     const textToSubmit = (overrideText || input).toLowerCase();
     if (!textToSubmit.trim() || isThinking) return
 
-    const newMessages = [...messages, { role: 'user', content: overrideText || input }]
+    const newMessages: Message[] = [...messages, { role: 'user', content: overrideText || input }]
     setMessages(newMessages)
     if (!overrideText) setInput("")
     setIsThinking(true)
 
     // Council dispatch logic
     setTimeout(() => {
-      const responses: any[] = []
+      const responses: Message[] = []
 
       const triggerFinance = textToSubmit.includes("spend") || textToSubmit.includes("safe") || textToSubmit.includes("limit") || textToSubmit.includes("daily") || textToSubmit.includes("budget") || textToSubmit.includes("money") || textToSubmit.includes("impulse")
       const triggerGrowth = textToSubmit.includes("invest") || textToSubmit.includes("stock") || textToSubmit.includes("crypto") || textToSubmit.includes("gold") || textToSubmit.includes("growth") || textToSubmit.includes("opportunity") || textToSubmit.includes("market")
@@ -108,7 +108,7 @@ export function Coach() {
         responses.push({
           role: 'assistant',
           agent: 'Finance Strategist',
-          content: `Based on your current balance of RM 420, your absolute safe limit for today is RM ${safeDailySpend.toFixed(2)}. This ensures you stay on track for your upcoming bills.`
+          content: `Based on your current balance of RM ${user.currentBalance.toFixed(2)}, your absolute safe limit for today is RM ${safeDailySpend.toFixed(2)}. This ensures you stay on track for your upcoming bills.`
         })
       }
 
@@ -280,7 +280,7 @@ export function Coach() {
                   animate={{ opacity: 1 }}
                   className="space-y-6"
                 >
-                  {messages.map((m: any, i) => {
+                  {messages.map((m, i) => {
                     const agent = AGENTS.find(a => a.name === m.agent)
                     return (
                       <motion.div
