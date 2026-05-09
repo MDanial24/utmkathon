@@ -22,8 +22,9 @@ export function GlobalBackground() {
   // Landing: Always Video
   // App: Always Image (Light/Dark specific)
   const showVideo = isLanding
-  const videoSrc = isDark ? "/utmkathon/assets/bgm-dark.MP4" : "/utmkathon/assets/bgm-light.mp4"
-  const imageSrc = isDark ? "/utmkathon/assets/img-dark.PNG" : "/utmkathon/assets/img-light.PNG"
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
+  const videoSrc = isDark ? `${basePath}/assets/bgm-dark.MP4` : `${basePath}/assets/bgm-light.mp4`
+  const imageSrc = isDark ? `${basePath}/assets/img-dark.PNG` : `${basePath}/assets/img-light.PNG`
 
   return (
     <div className="fixed inset-0 -z-50 overflow-hidden bg-background">

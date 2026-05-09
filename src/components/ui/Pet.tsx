@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 export type PetAnimation = "idle" | "walk" | "run" | "wave" | "excited" | "sad" | "happy" | "angry" | "think" | "blink"
@@ -9,6 +8,7 @@ export type PetAnimation = "idle" | "walk" | "run" | "wave" | "excited" | "sad" 
 interface PetProps {
   animation?: PetAnimation
   size?: number
+  offsetY?: number // Add this for fine-tuning vertical alignment
   className?: string
 }
 
@@ -26,9 +26,9 @@ const ANIMATIONS: Record<PetAnimation, { row: number; frames: number }> = {
 }
 
 const ROWS = 10
-const COLS = 8 // Maximum columns in the sheet
+const COLS = 8
 
-export function Pet({ animation = "idle", size = 64, className }: PetProps) {
+export function Pet({ animation = "idle", size = 64, offsetY = 0, className }: PetProps) {
   const [frame, setFrame] = useState(0)
   const anim = ANIMATIONS[animation]
 
@@ -39,29 +39,29 @@ export function Pet({ animation = "idle", size = 64, className }: PetProps) {
     return () => clearInterval(interval)
   }, [anim.frames])
 
-  // Reset frame when animation changes
   useEffect(() => {
     setFrame(0)
   }, [animation])
 
-  const xPerc = (frame / COLS) * 100
-  const yPerc = (anim.row / ROWS) * 100
+  // Standard percentage calculation for CSS spritesheets
+  // Using pixel offsets with a small adjustment to hide bleeding from adjacent frames
+  const xOffset = -frame * size
+  const yOffset = -anim.row * size + (size * 0.0025) + offsetY // Restored user's preferred multiplier
 
   return (
-    <div 
+    <div
       className={cn("relative shrink-0 overflow-hidden", className)}
-      style={{ 
-        width: size, 
+      style={{
+        width: size,
         height: size,
       }}
     >
-      <div 
+      <div
         className="absolute w-full h-full"
         style={{
-          backgroundImage: "url('/utmkathon/assets/kebo/spritesheet.webp')",
-          backgroundSize: `${COLS * 100}% ${ROWS * 100}%`,
-          backgroundPosition: `${xPerc}% ${yPerc}%`,
-          imageRendering: "pixelated",
+          backgroundImage: `url('${process.env.NEXT_PUBLIC_BASE_PATH || ""}/assets/kebo/spritesheet.webp')`,
+          backgroundSize: `${COLS * 100}% auto`,
+          backgroundPosition: `${xOffset}px ${yOffset}px`,
         }}
       />
     </div>
