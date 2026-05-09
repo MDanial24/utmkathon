@@ -3,11 +3,12 @@
 import { useStore } from "@/store/useStore"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { QrCode, ScanLine, X, AlertTriangle, ArrowRight, Zap } from "lucide-react"
+import { QrCode, ScanLine, X, AlertTriangle, ArrowRight, Zap, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { TopUpModal } from "./TopUpModal"
 
 export function Scanner() {
   const router = useRouter()
@@ -15,6 +16,8 @@ export function Scanner() {
   const [scannedItem, setScannedItem] = useState<{ merchant: string, amount: number, category: string } | null>(null)
   const [isWarning, setIsWarning] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isFailed, setIsFailed] = useState(false)
+  const [showTopUpModal, setShowTopUpModal] = useState(false)
 
   const handleDemoScan = () => {
     // Simulate scanning an unplanned clothing item
@@ -29,16 +32,21 @@ export function Scanner() {
   const handleConfirmPay = () => {
     setIsProcessing(true)
     setTimeout(() => {
-      addTransaction({
-        id: Date.now().toString(),
-        title: scannedItem!.merchant,
-        amount: scannedItem!.amount,
-        date: new Date().toISOString(),
-        category: scannedItem!.category,
-        type: 'expense',
-        confidence: 0.95
-      })
-      router.push("/dashboard")
+      if (scannedItem!.amount > user.currentBalance) {
+        setIsProcessing(false)
+        setIsFailed(true)
+      } else {
+        addTransaction({
+          id: Date.now().toString(),
+          title: scannedItem!.merchant,
+          amount: scannedItem!.amount,
+          date: new Date().toISOString(),
+          category: scannedItem!.category,
+          type: 'expense',
+          confidence: 0.95
+        })
+        router.push("/dashboard")
+      }
     }, 1500)
   }
 
@@ -143,8 +151,71 @@ export function Scanner() {
               <p className="font-medium text-slate-600">Processing Payment...</p>
             </motion.div>
           )}
+
+          {isFailed && !isProcessing && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full bg-white p-6 rounded-3xl shadow-2xl flex flex-col space-y-6"
+            >
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-rose-500/20 flex items-center justify-center mx-auto text-rose-500">
+                  <AlertCircle className="w-10 h-10 animate-bounce" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-slate-900">Payment Declined</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Insufficient funds in your virtual wallet.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 space-y-2">
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Your Balance:</span>
+                  <span className="font-bold text-slate-700">RM {user.currentBalance.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Required:</span>
+                  <span className="font-bold text-rose-600">RM {scannedItem!.amount.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-rose-100/50 pt-2 flex justify-between text-xs font-bold text-rose-600">
+                  <span>Shortfall:</span>
+                  <span>RM {(scannedItem!.amount - user.currentBalance).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="h-12 border-slate-200 text-slate-600 rounded-xl"
+                  onClick={() => {
+                    setIsFailed(false)
+                    setScannedItem(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  className="h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl"
+                  onClick={() => setShowTopUpModal(true)}
+                >
+                  Top Up
+                </Button>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
+        <TopUpModal 
+          isOpen={showTopUpModal} 
+          onClose={() => {
+            setShowTopUpModal(false)
+            if (user.currentBalance >= scannedItem!.amount) {
+              setIsFailed(false)
+            }
+          }} 
+        />
       </div>
     </div>
   )
