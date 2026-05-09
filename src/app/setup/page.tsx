@@ -13,6 +13,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Sun,
+  Moon,
   Shield,
   Laptop,
   Home,
@@ -25,11 +26,14 @@ import {
   Info
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useTheme } from "next-themes"
 
 export default function SetupPage() {
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
 
   // Setup steps: 1 to 5
+
   // Step 1: Tell GX Youth about you (Name, Employment)
   // Step 2: The Router Page (Income Source)
   // Step 3: The Dynamic Combination Page
@@ -148,26 +152,29 @@ export default function SetupPage() {
       let totalAmount = 800
       let durationDays = 30
 
+      const safeLumpDuration = lumpDuration || 1
+      const safeRunwayDuration = runwayDuration || 1
+
       if (incomeSource === "fixed") {
         totalAmount = fixedFrequency === "weekly" ? fixedAmount * 4.33 : fixedAmount
         durationDays = fixedFrequency === "weekly" ? 7 : 30
       } else if (incomeSource === "lump-sum") {
         totalAmount = lumpAmount
         if (lumpDurationUnit === "week") {
-          durationDays = lumpDuration * 7
+          durationDays = safeLumpDuration * 7
         } else if (lumpDurationUnit === "month") {
-          durationDays = lumpDuration * 30
+          durationDays = safeLumpDuration * 30
         } else if (lumpDurationUnit === "year") {
-          durationDays = lumpDuration * 365
+          durationDays = safeLumpDuration * 365
         }
       } else { // Irregular or None
         totalAmount = savingsAmount
         if (runwayDurationUnit === "week") {
-          durationDays = runwayDuration * 7
+          durationDays = safeRunwayDuration * 7
         } else if (runwayDurationUnit === "month") {
-          durationDays = runwayDuration * 30
+          durationDays = safeRunwayDuration * 30
         } else if (runwayDurationUnit === "year") {
-          durationDays = runwayDuration * 365
+          durationDays = safeRunwayDuration * 365
         }
       }
 
@@ -224,9 +231,9 @@ export default function SetupPage() {
           durationDays: durationDays,
           lumpStartDate: lumpStartDate,
           weeklyPayDay: weeklyPayDay,
-          lumpDuration: lumpDuration,
+          lumpDuration: safeLumpDuration,
           lumpDurationUnit: lumpDurationUnit,
-          runwayDuration: runwayDuration,
+          runwayDuration: safeRunwayDuration,
           runwayDurationUnit: runwayDurationUnit,
           totalCommitments: totalCommitments,
         },
@@ -250,39 +257,42 @@ export default function SetupPage() {
   const progressPercent = step * 20
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-foreground flex flex-col items-center justify-between p-6 sm:p-8 overflow-hidden relative font-sans">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50 text-foreground flex flex-col items-center justify-between p-6 sm:p-8 overflow-hidden relative font-sans transition-colors duration-300">
 
       {/* Dynamic blurred glow background effects */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
-        <div className="absolute top-[-10%] right-[-10%] w-[450px] h-[450px] bg-purple-200/40 blur-[130px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-pink-100/30 blur-[120px] rounded-full" />
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-20">
+        <div className="absolute top-[-10%] right-[-10%] w-[450px] h-[450px] bg-purple-200/40 dark:bg-purple-800/20 blur-[130px] rounded-full" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-pink-100/30 dark:bg-pink-950/10 blur-[120px] rounded-full" />
       </div>
 
       {/* Top Header Row */}
       <header className="w-full max-w-sm sm:max-w-md z-10 flex items-center justify-between">
         <div>
-          <span className="text-[11px] font-extrabold tracking-widest text-[rgb(147,51,234)] uppercase">
+          <span className="text-[11px] font-extrabold tracking-widest text-[rgb(147,51,234)] dark:text-purple-400 uppercase">
             GX Youth Setup
           </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight mt-1 leading-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-slate-100 tracking-tight mt-1 leading-tight">
             Build your money cockpit
           </h1>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-1">
+          <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-1">
             This prototype uses simulated data and localStorage only.
           </p>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="w-10 h-10 rounded-full border border-slate-100 bg-white/80 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-600 self-start animate-pulse"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="w-10 h-10 rounded-full border border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-600 dark:text-slate-300 dark:hover:text-slate-100 self-start relative"
         >
-          <Sun className="w-4 h-4 text-purple-400" />
+          <Sun className="w-4 h-4 text-purple-400 dark:text-purple-300 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute w-4 h-4 text-purple-400 dark:text-purple-300 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
         </Button>
       </header>
 
       {/* Progress Bar Container */}
       <div className="w-full max-w-sm sm:max-w-md z-10 mt-6">
-        <div className="w-full h-2 bg-purple-100/50 rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-purple-100/50 dark:bg-purple-950/20 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
@@ -294,7 +304,7 @@ export default function SetupPage() {
 
       {/* Main Form Content Card */}
       <main className="w-full max-w-sm sm:max-w-md z-10 my-8 flex-1 flex flex-col justify-center">
-        <div className="w-full bg-white/95 border border-slate-100 shadow-xl shadow-slate-100/50 rounded-[2.5rem] p-6 sm:p-8 min-h-[380px] flex flex-col justify-between backdrop-blur-md">
+        <div className="w-full bg-white/95 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-100/50 dark:shadow-none rounded-[2.5rem] p-6 sm:p-8 min-h-[380px] flex flex-col justify-between backdrop-blur-md">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -303,32 +313,30 @@ export default function SetupPage() {
               exit={{ opacity: 0, x: -15 }}
               transition={{ duration: 0.2 }}
               className="space-y-5"
-            >
-
-              {/* Step 1: Personal Info */}
+            >              {/* Step 1: Personal Info */}
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-[rgb(147,51,234)]">
+                    <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-[rgb(147,51,234)] dark:text-purple-300">
                       <User className="w-5 h-5" />
                     </div>
-                    <h2 className="text-lg font-extrabold text-slate-900">Tell GX Youth about you</h2>
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">Tell GX Youth about you</h2>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Name</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full h-12 px-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] focus:ring-1 focus:ring-[rgb(147,51,234)] outline-none font-bold text-slate-800 transition-all text-sm"
+                      className="w-full h-12 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] focus:ring-1 focus:ring-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 transition-all text-sm"
                       placeholder="Enter your name"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Employment Status</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Employment Status</label>
                     <div className="grid grid-cols-3 gap-2">
                       {(["Student", "Employed", "Unemployed"] as const).map((status) => (
                         <button
@@ -336,8 +344,8 @@ export default function SetupPage() {
                           type="button"
                           onClick={() => setEmploymentStatus(status)}
                           className={`h-11 rounded-2xl text-xs font-extrabold transition-all border ${employmentStatus === status
-                              ? "bg-purple-50/80 border-[rgb(147,51,234)] text-[rgb(147,51,234)] shadow-sm"
-                              : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                              ? "bg-purple-50/80 dark:bg-purple-950/40 border-[rgb(147,51,234)] text-[rgb(147,51,234)] dark:text-purple-300 shadow-sm"
+                              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                             }`}
                         >
                           {status}
@@ -347,15 +355,14 @@ export default function SetupPage() {
                   </div>
                 </div>
               )}
-
               {/* Step 2: The Router Page (Income Source) */}
               {step === 2 && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-[rgb(147,51,234)]">
+                    <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-[rgb(147,51,234)] dark:text-purple-300">
                       <Coins className="w-5 h-5" />
                     </div>
-                    <h2 className="text-lg font-extrabold text-slate-900">How do you receive your money?</h2>
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">How do you receive your money?</h2>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
@@ -394,17 +401,17 @@ export default function SetupPage() {
                           type="button"
                           onClick={() => setIncomeSource(source.id as any)}
                           className={`p-3.5 rounded-2xl flex items-start gap-3.5 border text-left transition-all ${isSelected
-                              ? "bg-purple-50/80 border-[rgb(147,51,234)] text-[rgb(147,51,234)] shadow-sm"
-                              : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-200"
+                              ? "bg-purple-50/80 dark:bg-purple-950/40 border-[rgb(147,51,234)] text-[rgb(147,51,234)] dark:text-purple-300 shadow-sm"
+                              : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-slate-200 dark:hover:border-slate-700"
                             }`}
                         >
-                          <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center ${isSelected ? "bg-purple-100 text-[rgb(147,51,234)]" : "bg-slate-100 text-slate-500"
+                          <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center ${isSelected ? "bg-purple-100 dark:bg-purple-900/50 text-[rgb(147,51,234)] dark:text-purple-300" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                             }`}>
                             <IconComp className="w-4 h-4" />
                           </div>
                           <div className="space-y-0.5">
-                            <span className="text-xs font-black text-slate-900 block leading-snug">{source.title}</span>
-                            <span className="text-[10px] font-medium text-slate-450 block leading-normal">{source.desc}</span>
+                            <span className="text-xs font-black text-slate-900 dark:text-slate-100 block leading-snug">{source.title}</span>
+                            <span className="text-[10px] font-medium text-slate-450 dark:text-slate-400 block leading-normal">{source.desc}</span>
                           </div>
                         </button>
                       )
@@ -421,29 +428,30 @@ export default function SetupPage() {
                   {incomeSource === "fixed" && (
                     <div className="space-y-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-[rgb(147,51,234)]">
+                        <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-[rgb(147,51,234)] dark:text-purple-300">
                           <Layers className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-extrabold text-slate-900">Recurring Income Details</h2>
+                        <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">Recurring Income Details</h2>
                       </div>
 
                       {/* Input 1: Amount */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Amount</label>
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">RM</span>
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-extrabold text-sm">RM</span>
                           <input
                             type="number"
-                            value={fixedAmount}
-                            onChange={(e) => setFixedAmount(Number(e.target.value))}
-                            className="w-full h-11 pl-12 pr-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 transition-all text-sm animate-fade-in"
+                            value={fixedAmount || ""}
+                            placeholder="0"
+                            onChange={(e) => setFixedAmount(e.target.value === "" ? 0 : Number(e.target.value))}
+                            className="w-full h-11 pl-12 pr-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 transition-all text-sm animate-fade-in"
                           />
                         </div>
                       </div>
 
                       {/* Input 2: Frequency Selector */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Frequency</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Frequency</label>
                         <div className="grid grid-cols-2 gap-2">
                           {(["monthly", "weekly"] as const).map((freq) => (
                             <button
@@ -451,8 +459,8 @@ export default function SetupPage() {
                               type="button"
                               onClick={() => setFixedFrequency(freq)}
                               className={`h-9 rounded-xl text-xs font-bold border transition-all ${fixedFrequency === freq
-                                  ? "bg-purple-50 border-[rgb(147,51,234)] text-[rgb(147,51,234)] shadow-sm"
-                                  : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                                  ? "bg-purple-50 dark:bg-purple-950/40 border-[rgb(147,51,234)] text-[rgb(147,51,234)] dark:text-purple-300 shadow-sm"
+                                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                                 }`}
                             >
                               {freq === "monthly" ? "Monthly" : "Weekly"}
@@ -465,18 +473,18 @@ export default function SetupPage() {
                       <div className="space-y-1.5 animate-fade-in">
                         {fixedFrequency === "weekly" ? (
                           <>
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pay Day</label>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pay Day</label>
                             <div className="relative">
                               <select
                                 value={weeklyPayDay}
                                 onChange={(e) => setWeeklyPayDay(e.target.value)}
-                                className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 text-sm appearance-none cursor-pointer"
+                                className="w-full h-11 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 text-sm appearance-none cursor-pointer"
                               >
                                 {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
                                   <option key={day} value={day}>{day}</option>
                                 ))}
                               </select>
-                              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
                                 <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                                   <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
                                 </svg>
@@ -485,21 +493,21 @@ export default function SetupPage() {
                           </>
                         ) : (
                           <>
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Next Allowance/Payday Date</label>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Next Allowance/Payday Date</label>
                             <input
                               type="date"
                               value={fixedNextDate}
                               onChange={(e) => setFixedNextDate(e.target.value)}
-                              className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 text-sm"
+                              className="w-full h-11 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 text-sm appearance-none"
                             />
                           </>
                         )}
                       </div>
 
                       {/* Insight Note */}
-                      <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 flex gap-2.5 items-start">
-                        <Info className="w-4 h-4 text-[rgb(147,51,234)] mt-0.5 flex-shrink-0" />
-                        <p className="text-[11px] text-slate-600 font-semibold leading-relaxed">
+                      <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 flex gap-2.5 items-start">
+                        <Info className="w-4 h-4 text-[rgb(147,51,234)] dark:text-purple-300 mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
                           {fixedFrequency === "weekly" 
                             ? `We'll automatically reset your budget every week on ${weeklyPayDay}.`
                             : "We'll automatically reset your budget on the 1st of every month."}
@@ -512,35 +520,37 @@ export default function SetupPage() {
                   {incomeSource === "lump-sum" && (
                     <div className="space-y-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-[rgb(147,51,234)]">
+                        <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-[rgb(147,51,234)] dark:text-purple-300">
                           <Coins className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-extrabold text-slate-900">Lump Sum Details</h2>
+                        <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">Lump Sum Details</h2>
                       </div>
 
                       {/* Input 1: Total Amount */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Amount</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Amount</label>
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">RM</span>
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-extrabold text-sm">RM</span>
                           <input
                             type="number"
-                            value={lumpAmount}
-                            onChange={(e) => setLumpAmount(Number(e.target.value))}
-                            className="w-full h-11 pl-12 pr-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 transition-all text-sm"
+                            value={lumpAmount || ""}
+                            placeholder="0"
+                            onChange={(e) => setLumpAmount(e.target.value === "" ? 0 : Number(e.target.value))}
+                            className="w-full h-11 pl-12 pr-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 transition-all text-sm"
                           />
                         </div>
                       </div>
 
                       {/* Input 2: Dynamic Two-Box Duration Selector */}
-                      <div className="space-y-1.5 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block text-center">How long should this last?</label>
+                      <div className="space-y-1.5 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block text-center">How long should this last?</label>
                         <div className="flex items-center justify-center gap-2.5">
                           <input
                             type="number"
-                            value={lumpDuration}
-                            onChange={(e) => setLumpDuration(Math.max(1, Number(e.target.value)))}
-                            className="w-18 h-10 px-2 rounded-xl bg-white border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 text-sm text-center shadow-sm"
+                            value={lumpDuration || ""}
+                            placeholder="1"
+                            onChange={(e) => setLumpDuration(e.target.value === "" ? 0 : Math.max(1, Number(e.target.value)))}
+                            className="w-18 h-10 px-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 text-sm text-center shadow-sm"
                             min="1"
                           />
 
@@ -548,13 +558,13 @@ export default function SetupPage() {
                             <select
                               value={lumpDurationUnit}
                               onChange={(e) => setLumpDurationUnit(e.target.value as any)}
-                              className="h-10 pl-4 pr-9 rounded-xl bg-white border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer shadow-sm text-center"
+                              className="h-10 pl-4 pr-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-700 dark:text-slate-300 text-xs appearance-none cursor-pointer shadow-sm text-center"
                             >
                               <option value="week">week{lumpDuration > 1 ? "s" : ""}</option>
                               <option value="month">month{lumpDuration > 1 ? "s" : ""}</option>
                               <option value="year">year{lumpDuration > 1 ? "s" : ""}</option>
                             </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
                               <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
                                 <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
                               </svg>
@@ -565,20 +575,20 @@ export default function SetupPage() {
 
                       {/* Input 3: Start Date */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Start Date</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Start Date</label>
                         <input
                           type="date"
                           value={lumpStartDate}
                           onChange={(e) => setLumpStartDate(e.target.value)}
-                          className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 text-sm"
+                          className="w-full h-11 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 text-sm appearance-none"
                         />
                       </div>
 
                       {/* Dynamic Lump Sum Insight */}
-                      <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 flex gap-2.5 items-start">
-                        <Info className="w-4 h-4 text-[rgb(147,51,234)] mt-0.5 flex-shrink-0" />
-                        <p className="text-[11px] text-slate-600 font-semibold leading-relaxed">
-                          This averages out to <span className="font-extrabold text-[rgb(147,51,234)]">RM {getLumpSumMonthlyAverage()}/month</span>.
+                      <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 flex gap-2.5 items-start">
+                        <Info className="w-4 h-4 text-[rgb(147,51,234)] dark:text-purple-300 mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                          This averages out to <span className="font-extrabold text-[rgb(147,51,234)] dark:text-purple-300">RM {getLumpSumMonthlyAverage()}/month</span>.
                         </p>
                       </div>
                     </div>
@@ -588,37 +598,39 @@ export default function SetupPage() {
                   {(incomeSource === "irregular" || incomeSource === "none") && (
                     <div className="space-y-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-[rgb(147,51,234)]">
+                        <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-[rgb(147,51,234)] dark:text-purple-300">
                           {incomeSource === "irregular" ? <Briefcase className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
                         </div>
-                        <h2 className="text-lg font-extrabold text-slate-900">
+                        <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
                           {incomeSource === "irregular" ? "Savings & Irregular Funds" : "Current Savings Balance"}
                         </h2>
                       </div>
 
                       {/* Input 1: Total Money You Have Now */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total money you have now</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total money you have now</label>
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">RM</span>
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-extrabold text-sm">RM</span>
                           <input
                             type="number"
-                            value={savingsAmount}
-                            onChange={(e) => setSavingsAmount(Number(e.target.value))}
-                            className="w-full h-11 pl-12 pr-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 transition-all text-sm"
+                            value={savingsAmount || ""}
+                            placeholder="0"
+                            onChange={(e) => setSavingsAmount(e.target.value === "" ? 0 : Number(e.target.value))}
+                            className="w-full h-11 pl-12 pr-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 transition-all text-sm"
                           />
                         </div>
                       </div>
 
                       {/* Input 2: Target Duration */}
-                      <div className="space-y-1.5 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block text-center font-bold">Target duration to last</label>
+                      <div className="space-y-1.5 bg-slate-50/50 dark:bg-slate-800/30 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block text-center font-bold">Target duration to last</label>
                         <div className="flex items-center justify-center gap-2.5">
                           <input
                             type="number"
-                            value={runwayDuration}
-                            onChange={(e) => setRunwayDuration(Math.max(1, Number(e.target.value)))}
-                            className="w-18 h-10 px-2 rounded-xl bg-white border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 text-sm text-center shadow-sm"
+                            value={runwayDuration || ""}
+                            placeholder="1"
+                            onChange={(e) => setRunwayDuration(e.target.value === "" ? 0 : Math.max(1, Number(e.target.value)))}
+                            className="w-18 h-10 px-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 dark:text-slate-100 text-sm text-center shadow-sm"
                             min="1"
                           />
 
@@ -626,13 +638,13 @@ export default function SetupPage() {
                             <select
                               value={runwayDurationUnit}
                               onChange={(e) => setRunwayDurationUnit(e.target.value as any)}
-                              className="h-10 pl-4 pr-9 rounded-xl bg-white border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-700 text-xs appearance-none cursor-pointer shadow-sm text-center"
+                              className="h-10 pl-4 pr-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-700 dark:text-slate-300 text-xs appearance-none cursor-pointer shadow-sm text-center"
                             >
                               <option value="week">week{runwayDuration > 1 ? "s" : ""}</option>
                               <option value="month">month{runwayDuration > 1 ? "s" : ""}</option>
                               <option value="year">year{runwayDuration > 1 ? "s" : ""}</option>
                             </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
                               <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20">
                                 <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
                               </svg>
@@ -642,9 +654,9 @@ export default function SetupPage() {
                       </div>
 
                       {/* Insight Note */}
-                      <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 flex gap-2.5 items-start">
-                        <Info className="w-4 h-4 text-[rgb(147,51,234)] mt-0.5 flex-shrink-0" />
-                        <p className="text-[11px] text-slate-600 font-semibold leading-relaxed">
+                      <div className="p-3.5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 flex gap-2.5 items-start">
+                        <Info className="w-4 h-4 text-[rgb(147,51,234)] dark:text-purple-300 mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
                           We'll track your 'runway' to make sure you don't run out.
                         </p>
                       </div>
@@ -659,85 +671,90 @@ export default function SetupPage() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-[rgb(147,51,234)]">
+                      <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-[rgb(147,51,234)] dark:text-purple-300">
                         <CreditCard className="w-4 h-4" />
                       </div>
                       <div>
-                        <h2 className="text-base font-extrabold text-slate-900">Fixed commitments</h2>
-                        <p className="text-[11px] text-fuchsia-600 italic font-bold">per month commitment</p>
+                        <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Fixed commitments</h2>
+                        <p className="text-[11px] text-fuchsia-600 dark:text-fuchsia-400 italic font-bold">per month commitment</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Ultra compact list representation */}
-                  <div className="space-y-2 border border-slate-100 rounded-2xl p-3 bg-slate-50/30">
+                  <div className="space-y-2 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3 bg-slate-50/30 dark:bg-slate-800/20">
 
                     {/* Rent */}
                     <div className="flex justify-between items-center h-8">
-                      <span className="text-xs font-bold text-slate-600">Rent</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Rent</span>
                       <div className="relative w-24">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px]">RM</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-[10px]">RM</span>
                         <input
                           type="number"
-                          value={rent}
-                          onChange={(e) => setRent(Number(e.target.value))}
-                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white border border-slate-200 outline-none text-xs font-bold text-slate-850 text-right"
+                          value={rent || ""}
+                          placeholder="0"
+                          onChange={(e) => setRent(e.target.value === "" ? 0 : Number(e.target.value))}
+                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none text-xs font-bold text-slate-850 dark:text-slate-100 text-right shadow-sm"
                         />
                       </div>
                     </div>
 
                     {/* Phone bill */}
                     <div className="flex justify-between items-center h-8">
-                      <span className="text-xs font-bold text-slate-600">Phone bill</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Phone bill</span>
                       <div className="relative w-24">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px]">RM</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-[10px]">RM</span>
                         <input
                           type="number"
-                          value={phoneBill}
-                          onChange={(e) => setPhoneBill(Number(e.target.value))}
-                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white border border-slate-200 outline-none text-xs font-bold text-slate-850 text-right"
+                          value={phoneBill || ""}
+                          placeholder="0"
+                          onChange={(e) => setPhoneBill(e.target.value === "" ? 0 : Number(e.target.value))}
+                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none text-xs font-bold text-slate-850 dark:text-slate-100 text-right shadow-sm"
                         />
                       </div>
                     </div>
 
                     {/* Transport */}
                     <div className="flex justify-between items-center h-8">
-                      <span className="text-xs font-bold text-slate-600">Transport</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Transport</span>
                       <div className="relative w-24">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px]">RM</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-[10px]">RM</span>
                         <input
                           type="number"
-                          value={transport}
-                          onChange={(e) => setTransport(Number(e.target.value))}
-                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white border border-slate-200 outline-none text-xs font-bold text-slate-850 text-right"
+                          value={transport || ""}
+                          placeholder="0"
+                          onChange={(e) => setTransport(e.target.value === "" ? 0 : Number(e.target.value))}
+                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none text-xs font-bold text-slate-850 dark:text-slate-100 text-right shadow-sm"
                         />
                       </div>
                     </div>
 
                     {/* PTPTN */}
                     <div className="flex justify-between items-center h-8">
-                      <span className="text-xs font-bold text-slate-600 font-mono">PTPTN</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 font-mono">PTPTN</span>
                       <div className="relative w-24">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px]">RM</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-[10px]">RM</span>
                         <input
                           type="number"
-                          value={ptptn}
-                          onChange={(e) => setPtptn(Number(e.target.value))}
-                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white border border-slate-200 outline-none text-xs font-bold text-slate-850 text-right"
+                          value={ptptn || ""}
+                          placeholder="0"
+                          onChange={(e) => setPtptn(e.target.value === "" ? 0 : Number(e.target.value))}
+                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none text-xs font-bold text-slate-850 dark:text-slate-100 text-right shadow-sm"
                         />
                       </div>
                     </div>
 
                     {/* Subscriptions */}
                     <div className="flex justify-between items-center h-8">
-                      <span className="text-xs font-bold text-slate-600">Subscriptions</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Subscriptions</span>
                       <div className="relative w-24">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px]">RM</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-[10px]">RM</span>
                         <input
                           type="number"
-                          value={subscriptions}
-                          onChange={(e) => setSubscriptions(Number(e.target.value))}
-                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white border border-slate-200 outline-none text-xs font-bold text-slate-850 text-right"
+                          value={subscriptions || ""}
+                          placeholder="0"
+                          onChange={(e) => setSubscriptions(e.target.value === "" ? 0 : Number(e.target.value))}
+                          className="w-full h-8 pl-8 pr-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[rgb(147,51,234)] outline-none text-xs font-bold text-slate-850 dark:text-slate-100 text-right shadow-sm"
                         />
                       </div>
                     </div>
@@ -750,10 +767,10 @@ export default function SetupPage() {
               {step === 5 && (
                 <div className="space-y-5">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-[rgb(147,51,234)]">
+                    <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-[rgb(147,51,234)] dark:text-purple-300">
                       <Target className="w-5 h-5" />
                     </div>
-                    <h2 className="text-lg font-extrabold text-slate-900">Main savings goal</h2>
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">Main savings goal</h2>
                   </div>
 
                   {/* Grid showing logos side-by-side with naming option */}
@@ -774,15 +791,15 @@ export default function SetupPage() {
                           type="button"
                           onClick={() => setSelectedGoal(goal.name)}
                           className={`p-3 rounded-2xl flex flex-row items-center gap-2.5 border text-left transition-all ${isSelected
-                            ? "bg-purple-50/80 border-[rgb(147,51,234)] text-[rgb(147,51,234)] shadow-sm"
-                            : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-200"
+                            ? "bg-purple-50/80 dark:bg-purple-950/40 border-[rgb(147,51,234)] text-[rgb(147,51,234)] dark:text-purple-300 shadow-sm"
+                            : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-slate-200 dark:hover:border-slate-700"
                             }`}
                         >
-                          <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${isSelected ? "bg-purple-100 text-[rgb(147,51,234)]" : "bg-slate-100 text-slate-500"
+                          <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${isSelected ? "bg-purple-100 dark:bg-purple-900/50 text-[rgb(147,51,234)] dark:text-purple-300" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                             }`}>
                             <IconComponent className="w-4 h-4" />
                           </div>
-                          <span className="text-[10px] sm:text-[11px] font-extrabold leading-tight text-slate-800">{goal.name}</span>
+                          <span className="text-[10px] sm:text-[11px] font-extrabold leading-tight text-slate-800 dark:text-slate-200">{goal.name}</span>
                         </button>
                       )
                     })}
@@ -794,11 +811,11 @@ export default function SetupPage() {
           </AnimatePresence>
 
           {/* Setup Action Buttons */}
-          <div className="flex gap-4 pt-6 mt-6 border-t border-slate-100/80">
+          <div className="flex gap-4 pt-6 mt-6 border-t border-slate-100/80 dark:border-slate-800/80">
             <Button
               variant="outline"
               onClick={handleBack}
-              className="flex-1 h-12 rounded-2xl border-slate-200 hover:bg-slate-50 text-slate-500 font-extrabold text-sm flex items-center justify-center gap-1.5"
+              className="flex-1 h-12 rounded-2xl border-slate-200 dark:border-slate-800 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-400 font-extrabold text-sm flex items-center justify-center gap-1.5"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
@@ -817,12 +834,12 @@ export default function SetupPage() {
       {/* Footer Branding Mockup Accent */}
       <footer className="w-full max-w-sm sm:max-w-md z-10 flex justify-between items-center opacity-60">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-md">
+          <div className="w-7 h-7 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center shadow-md">
             <span className="text-xs font-black italic">GX</span>
           </div>
-          <span className="text-[10px] font-extrabold text-slate-400">GX Youth Ecosystem</span>
+          <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500">GX Youth Ecosystem</span>
         </div>
-        <div className="w-16 h-1 bg-slate-200 rounded-full" />
+        <div className="w-16 h-1 bg-slate-200 dark:bg-slate-800 rounded-full" />
       </footer>
 
     </div>
