@@ -33,7 +33,7 @@ export function CoachFAB() {
     return () => clearInterval(interval)
   }, [])
 
-  if (pathname === '/' || pathname === '/onboarding' || pathname === '/coach' || pathname === '/scan') return null
+  if (pathname === '/' || pathname === '/onboarding' || pathname === '/coach' || pathname === '/scan' || pathname === '/setup') return null
   const message = msgIndex === 0 ? petMessage : MESSAGES[msgIndex]
 
   return (

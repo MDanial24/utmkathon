@@ -110,6 +110,15 @@ type Translations = {
     savePocketRent: string
     saveGoalMet: string
     saveCreatePocket: string
+    saveSplitSummary: string
+    saveMode: string
+    saveModeSavings: string
+    saveModeGrowth: string
+    saveRiskLevel: string
+    saveRiskLow: string
+    saveRiskMed: string
+    saveRiskHigh: string
+    saveInvestedBadge: string
     saveSmartAuto: string
     saveSmartDesc: string
     saveAddFunds: string

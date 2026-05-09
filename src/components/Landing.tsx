@@ -78,8 +78,8 @@ export default function Landing() {
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-1"
         >
-          <span className="text-2xl font-black tracking-tight">Beyond</span>
-          <div className="w-1 h-1 bg-primary rounded-full mt-2" />
+          <span className="text-2xl font-black tracking-tight text-primary">GX Youth</span>
+          <div className="w-1.5 h-1.5 bg-secondary rounded-full mt-2" />
         </motion.div>
         
         {/* iPhone Style Top Indicators Mockup (Time, Signal, Wifi, Battery) */}
@@ -120,7 +120,7 @@ export default function Landing() {
           transition={{ delay: 0.4 }}
           className="w-full flex items-center gap-4"
         >
-          <Link href="/dashboard" className="flex-1">
+          <Link href="/setup" className="flex-1">
             <Button className="w-full h-16 bg-foreground text-background hover:bg-foreground/90 rounded-[2rem] text-lg font-bold flex items-center justify-between px-8 group">
               Get started
               <ArrowUpRight className="w-6 h-6 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
