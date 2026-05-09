@@ -24,7 +24,12 @@ type Translations = {
     // Dashboard Quick Actions
     actionTransaction: string
     actionTransfer: string
-    actionBills: string
+    actionTopUp: string
+    topUpTitle: string
+    topUpSuccess: string
+    topUpSuccessDesc: string
+    insufficientFunds: string
+    insufficientFundsDesc: string
     actionShield: string
 
     // Dashboard Sections
@@ -165,7 +170,12 @@ export const t: Translations = {
 
     actionTransaction: "Transaction",
     actionTransfer: "Transfer",
-    actionBills: "Bills",
+    actionTopUp: "Top Up",
+    topUpTitle: "Top Up Wallet",
+    topUpSuccess: "Wallet Topped Up",
+    topUpSuccessDesc: "Funds have been added to your balance.",
+    insufficientFunds: "Insufficient Funds",
+    insufficientFundsDesc: "You do not have enough balance to complete this transaction. Please top up your wallet.",
     actionShield: "Shield",
 
     sectionHealthCheck: "Financial Health Check",
@@ -308,7 +318,12 @@ export const t: Translations = {
 
     actionTransaction: "Transaksi",
     actionTransfer: "Pindah",
-    actionBills: "Bil",
+    actionTopUp: "Tambah",
+    topUpTitle: "Tambah Baki Wallet",
+    topUpSuccess: "Baki Berjaya Ditambah",
+    topUpSuccessDesc: "Dana telah dimasukkan ke dalam baki anda.",
+    insufficientFunds: "Baki Tidak Mencukupi",
+    insufficientFundsDesc: "Baki anda tidak mencukupi untuk melengkapkan transaksi ini. Sila tambah baki wallet anda.",
     actionShield: "Pelindung",
 
     sectionHealthCheck: "Pemeriksaan Kewangan",

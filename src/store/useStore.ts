@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useState, useEffect } from 'react';
+import { Language } from '@/lib/translations';
 
 export interface Transaction {
   id: string;
@@ -31,8 +33,6 @@ export interface Agent {
   tools: string[];
 }
 
-import { Language } from '@/lib/translations';
-
 interface ResilienceState {
   language: Language;
   user: {
@@ -52,6 +52,8 @@ interface ResilienceState {
   debtRiskScore: number;
   cashflowRisk: 'low' | 'medium' | 'high';
   safeDailySpend: number;
+  isSpendGuardActive: boolean;
+  isSurvivalModeActive: boolean;
   isAutoSaveActive: boolean;
   autoSaveTargetIds: string[];
   autoSaveFrequency: 'daily' | 'weekly' | 'monthly';
@@ -76,53 +78,57 @@ interface ResilienceState {
   setLanguage: (lang: Language) => void;
 }
 
-export const useStore = create<ResilienceState>()(
+const initialStoreState = {
+  language: 'en' as Language,
+  user: {
+    name: 'Aiman',
+    type: 'Student',
+    monthlyAllowance: 800,
+    currentBalance: 420,
+    nextAllowanceDate: "2026-05-23T05:00:00.000Z",
+    emergencyFundGoal: 500,
+    currentEmergencyFund: 85,
+    spendingPersonality: 'Food Overspender + Impulse Buyer',
+  },
+  transactions: [
+    { id: '1', title: 'GrabFood', amount: 25.5, category: 'Food', date: "2026-05-09T05:00:00.000Z", type: 'expense' as const, confidence: 0.98 },
+    { id: '2', title: 'RapidKL', amount: 4.5, category: 'Transport', date: "2026-05-09T05:00:00.000Z", type: 'expense' as const, confidence: 0.99 },
+    { id: '3', title: 'Shopee - Shirt', amount: 45.0, category: 'Shopping', date: "2026-05-09T05:00:00.000Z", type: 'expense' as const, confidence: 0.95 },
+    { id: '4', title: 'Netflix', amount: 35.0, category: 'Subscription', date: "2026-05-09T05:00:00.000Z", type: 'expense' as const, confidence: 1.0 },
+    { id: '5', title: 'Campus Cafe', amount: 8.0, category: 'Food', date: "2026-05-09T05:00:00.000Z", type: 'expense' as const, confidence: 0.97 },
+  ],
+  savingsPockets: [
+    { id: '1', name: 'Emergency Fund', target: 500, current: 85, icon: '🛡️', mode: 'savings' as const },
+    { id: '2', name: 'Laptop Fund', target: 2500, current: 120, icon: '💻', mode: 'growth' as const, riskLevel: 'medium' as const },
+    { id: '3', name: 'Rent Buffer', target: 400, current: 50, icon: '🏠', mode: 'savings' as const },
+  ],
+  agents: [
+    { id: 'orch', name: 'Orchestrator Agent', status: 'idle' as const, latestFinding: 'System nominal. Monitoring cashflow.', confidence: 0.99, recommendedAction: 'No action needed', tools: ['monitor_all', 'dispatch'] },
+    { id: 'spend', name: 'Spending Sense Agent', status: 'alert' as const, latestFinding: 'Food spending is 15% above average.', confidence: 0.92, recommendedAction: 'Limit GrabFood to RM15/day', tools: ['analyze_category', 'detect_anomaly'] },
+    { id: 'cash', name: 'Cashflow Prediction Agent', status: 'alert' as const, latestFinding: 'Predicted broke date: 18 May', confidence: 0.87, recommendedAction: 'Activate Spend Guard', tools: ['predict_cashflow', 'calculate_safe_daily_spend'] },
+    { id: 'debt', name: 'Debt Shield Agent', status: 'idle' as const, latestFinding: 'No new debt detected.', confidence: 0.95, recommendedAction: 'Continue monitoring', tools: ['scan_bnpl', 'check_installments'] },
+  ],
+  resilienceScore: 68,
+  debtRiskScore: 45,
+  cashflowRisk: 'medium' as const,
+  safeDailySpend: 18.5,
+  isSpendGuardActive: false,
+  isSurvivalModeActive: false,
+  isAutoSaveActive: false,
+  autoSaveTargetIds: ['1'],
+  autoSaveFrequency: 'daily' as const,
+  autoSaveAmount: 2.0,
+  lastAutoSaveDate: null,
+  pet: {
+    message: 'Stay focused!'
+  },
+};
+
+// Raw store with persistence enabled
+const useStoreBase = create<ResilienceState>()(
   persist(
     (set, get) => ({
-      language: 'en',
-      user: {
-        name: 'Aiman',
-        type: 'Student',
-        monthlyAllowance: 800,
-        currentBalance: 420,
-        nextAllowanceDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        emergencyFundGoal: 500,
-        currentEmergencyFund: 85,
-        spendingPersonality: 'Food Overspender + Impulse Buyer',
-      },
-      transactions: [
-        { id: '1', title: 'GrabFood', amount: 25.5, category: 'Food', date: new Date().toISOString(), type: 'expense', confidence: 0.98 },
-        { id: '2', title: 'RapidKL', amount: 4.5, category: 'Transport', date: new Date().toISOString(), type: 'expense', confidence: 0.99 },
-        { id: '3', title: 'Shopee - Shirt', amount: 45.0, category: 'Shopping', date: new Date().toISOString(), type: 'expense', confidence: 0.95 },
-        { id: '4', title: 'Netflix', amount: 35.0, category: 'Subscription', date: new Date().toISOString(), type: 'expense', confidence: 1.0 },
-        { id: '5', title: 'Campus Cafe', amount: 8.0, category: 'Food', date: new Date().toISOString(), type: 'expense', confidence: 0.97 },
-      ],
-      savingsPockets: [
-        { id: '1', name: 'Emergency Fund', target: 500, current: 85, icon: '🛡️', mode: 'savings' },
-        { id: '2', name: 'Laptop Fund', target: 2500, current: 120, icon: '💻', mode: 'growth', riskLevel: 'medium' },
-        { id: '3', name: 'Rent Buffer', target: 400, current: 50, icon: '🏠', mode: 'savings' },
-      ],
-      agents: [
-        { id: 'orch', name: 'Orchestrator Agent', status: 'idle', latestFinding: 'System nominal. Monitoring cashflow.', confidence: 0.99, recommendedAction: 'No action needed', tools: ['monitor_all', 'dispatch'] },
-        { id: 'spend', name: 'Spending Sense Agent', status: 'alert', latestFinding: 'Food spending is 15% above average.', confidence: 0.92, recommendedAction: 'Limit GrabFood to RM15/day', tools: ['analyze_category', 'detect_anomaly'] },
-        { id: 'cash', name: 'Cashflow Prediction Agent', status: 'alert', latestFinding: 'Predicted broke date: 18 May', confidence: 0.87, recommendedAction: 'Activate Spend Guard', tools: ['predict_cashflow', 'calculate_safe_daily_spend'] },
-        { id: 'debt', name: 'Debt Shield Agent', status: 'idle', latestFinding: 'No new debt detected.', confidence: 0.95, recommendedAction: 'Continue monitoring', tools: ['scan_bnpl', 'check_installments'] },
-      ],
-      resilienceScore: 68,
-      debtRiskScore: 45,
-      cashflowRisk: 'medium',
-      safeDailySpend: 18.5,
-      isSpendGuardActive: false,
-      isSurvivalModeActive: false,
-      isAutoSaveActive: false,
-      autoSaveTargetIds: ['1'],
-      autoSaveFrequency: 'daily',
-      autoSaveAmount: 2.0,
-      lastAutoSaveDate: null,
-      pet: {
-        message: 'Stay focused!'
-      },
-
+      ...initialStoreState,
       addTransaction: (t) => set((state) => ({ 
         transactions: [t, ...state.transactions],
         user: { ...state.user, currentBalance: state.user.currentBalance - (t.type === 'expense' ? t.amount : -t.amount) }
@@ -193,8 +199,55 @@ export const useStore = create<ResilienceState>()(
       setLanguage: (lang) => set({ language: lang })
     }),
     {
-      name: 'resilience-storage',
+      name: 'resilience-agent-storage',
     }
   )
 );
 
+interface UseStoreHook {
+  (): ResilienceState;
+  <T>(selector: (state: ResilienceState) => T): T;
+  getState: typeof useStoreBase.getState;
+  setState: typeof useStoreBase.setState;
+  subscribe: typeof useStoreBase.subscribe;
+}
+
+// Safe Hydration Selector Hook wrapper with static Zustand bindings
+export const useStore = (() => {
+  const hook = <T>(selector?: (state: ResilienceState) => T): T | ResilienceState => {
+    const storeState = useStoreBase();
+    const [hydrated, setHydrated] = useState(false);
+
+    useEffect(() => {
+      setHydrated(true);
+    }, []);
+
+    const actions = {
+      addTransaction: storeState.addTransaction,
+      addSavingsPocket: storeState.addSavingsPocket,
+      updateSavingsPocket: storeState.updateSavingsPocket,
+      deleteSavingsPocket: storeState.deleteSavingsPocket,
+      addFundsToPocket: storeState.addFundsToPocket,
+      toggleSpendGuard: storeState.toggleSpendGuard,
+      toggleSurvivalMode: storeState.toggleSurvivalMode,
+      toggleAutoSave: storeState.toggleAutoSave,
+      setAutoSaveTargetIds: storeState.setAutoSaveTargetIds,
+      processAutoSave: storeState.processAutoSave,
+      updateResilienceScore: storeState.updateResilienceScore,
+      setLanguage: storeState.setLanguage,
+    };
+
+    const stateToUse = hydrated 
+      ? storeState 
+      : { ...initialStoreState, ...actions };
+
+    // Apply selector if provided, otherwise cast whole state
+    return selector ? selector(stateToUse as ResilienceState) : (stateToUse as ResilienceState);
+  };
+
+  hook.getState = useStoreBase.getState;
+  hook.setState = useStoreBase.setState;
+  hook.subscribe = useStoreBase.subscribe;
+
+  return hook as unknown as UseStoreHook;
+})();

@@ -10,13 +10,24 @@ import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { SpendGuardModal } from "./BudgetGuardModal"
 import { ResilienceModal } from "./ResilienceModal"
+import { TopUpModal } from "./TopUpModal"
 import Link from "next/link"
 import { t } from "@/lib/translations"
 
 export function Dashboard() {
-  const { user, resilienceScore, safeDailySpend, cashflowRisk, debtRiskScore, language, processAutoSave } = useStore()
+  const { 
+    user, 
+    resilienceScore, 
+    safeDailySpend, 
+    cashflowRisk, 
+    debtRiskScore, 
+    language, 
+    processAutoSave,
+    isSpendGuardActive 
+  } = useStore()
   const [showGuardModal, setShowGuardModal] = useState(false)
   const [showResilienceModal, setShowResilienceModal] = useState(false)
+  const [showTopUpModal, setShowTopUpModal] = useState(false)
   const strings = t[language]
 
   // Hydration guard for Next.js persisted state
@@ -94,16 +105,33 @@ export function Dashboard() {
         {[
           { icon: History, label: strings.actionTransaction, href: "/transactions", color: "text-indigo-500", bg: "bg-indigo-500/10" },
           { icon: Send, label: strings.actionTransfer, href: "/transfer", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-          { icon: Wallet, label: strings.actionBills, href: "#", color: "text-amber-500", bg: "bg-amber-500/10" },
+          { icon: Wallet, label: strings.actionTopUp, href: "#", color: "text-emerald-500", bg: "bg-emerald-500/10" },
           { icon: ShieldCheck, label: strings.actionShield, href: "/debt-shield", color: "text-primary", bg: "bg-primary/10" },
-        ].map((action) => (
-          <Link key={action.label} href={action.href} className="flex flex-col items-center gap-2 group">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${action.bg} ${action.color} group-hover:scale-105 transition-transform`}>
-              <action.icon className="w-6 h-6" />
+        ].map((action) => {
+          const isTopUp = action.label === strings.actionTopUp;
+          const content = (
+            <div className="flex flex-col items-center gap-2 group cursor-pointer">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${action.bg} ${action.color} group-hover:scale-105 transition-transform`}>
+                <action.icon className="w-6 h-6" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-600">{action.label}</span>
             </div>
-            <span className="text-[10px] font-bold text-slate-600">{action.label}</span>
-          </Link>
-        ))}
+          );
+
+          if (isTopUp) {
+            return (
+              <button key={action.label} onClick={() => setShowTopUpModal(true)} className="focus:outline-none flex flex-col items-center gap-2">
+                {content}
+              </button>
+            );
+          }
+
+          return (
+            <Link key={action.label} href={action.href}>
+              {content}
+            </Link>
+          );
+        })}
       </div>
 
 
@@ -139,19 +167,42 @@ export function Dashboard() {
       {/* Quick Insights */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold px-1">{strings.sectionInsights}</h3>
-        <motion.div 
-          className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start cursor-pointer"
-          whileHover={{ scale: 1.02 }}
-          onClick={() => setShowGuardModal(true)}
-        >
-          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500">
-            <AlertTriangle className="w-4 h-4" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-amber-600">{strings.insightBrokeDate}</p>
-            <p className="text-[11px] text-amber-800/80">{strings.insightBrokeDesc}</p>
-          </div>
-        </motion.div>
+        
+        {isSpendGuardActive ? (
+          <motion.div 
+            className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex gap-3 items-start cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+            onClick={() => setShowGuardModal(true)}
+          >
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-500">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-emerald-600">
+                {language === 'ms' ? 'Pengawal Bajet Aktif' : 'Spend Guard Active'}
+              </p>
+              <p className="text-[11px] text-emerald-800/80">
+                {language === 'ms' 
+                  ? 'Kewangan anda dilindungi. Had harian dikurangkan untuk mengelakkan risiko.' 
+                  : 'Your finances are protected. Daily spending limit reduced to avoid cashflow risk.'}
+              </p>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div 
+            className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+            onClick={() => setShowGuardModal(true)}
+          >
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-amber-600">{strings.insightBrokeDate}</p>
+              <p className="text-[11px] text-amber-800/80">{strings.insightBrokeDesc}</p>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div 
           className="p-3 rounded-2xl bg-primary/10 border border-primary/20 flex gap-3 items-start"
@@ -206,6 +257,11 @@ export function Dashboard() {
         isOpen={showResilienceModal}
         onClose={() => setShowResilienceModal(false)}
         score={resilienceScore}
+      />
+
+      <TopUpModal
+        isOpen={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
       />
     </div>
   )
