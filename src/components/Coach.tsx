@@ -37,7 +37,7 @@ interface Message {
 }
 
 export function Coach() {
-  const { user, safeDailySpend, resilienceScore, language, addSavingsPocket, savingsPockets, bills } = useStore()
+  const { user, safeDailySpend, resilienceScore, language, addSavingsPocket, savingsPockets, bills, addTransaction } = useStore()
   const strings = t[language]
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -66,7 +66,8 @@ export function Coach() {
           target: action.payload.target,
           current: action.payload.current || 0,
           icon: action.payload.icon || '💰',
-          mode: 'savings'
+          mode: action.payload.mode || 'savings',
+          riskLevel: action.payload.riskLevel
         });
         responseText = `Done! I've set up your ${action.payload.name} pocket with an initial RM ${action.payload.current}. Your Resilience Score is recalculating...`;
         break;
@@ -77,14 +78,24 @@ export function Coach() {
         responseText = "I've noted your focus on the Emergency Fund. Your safety net is your priority.";
         break;
       case 'transfer':
+        // Execute real transaction
+        addTransaction({
+          id: `txn-${Date.now()}`,
+          title: `Transfer to ${action.payload.recipient}`,
+          amount: action.payload.amount,
+          category: 'Transfer',
+          date: new Date().toISOString(),
+          type: 'expense',
+          confidence: 1.0
+        });
         responseText = `Transaction complete! I've successfully transferred RM ${action.payload.amount} to ${action.payload.recipient}. Your transaction ID is TXN-${Math.floor(Math.random()*1000000)}.`;
         break;
     }
 
     setMessages(prev => [
-      ...prev,
+      ...prev.map(m => ({ ...m, actions: undefined })),
       { role: 'user', content: action.label },
-      { role: 'assistant', agent: 'Savings Sentinel', content: responseText }
+      { role: 'assistant', agent: action.type === 'transfer' ? 'Finance Strategist' : 'Savings Sentinel', content: responseText }
     ]);
   }
 
@@ -100,28 +111,57 @@ export function Coach() {
     // Council dispatch logic
     setTimeout(() => {
       const responses: Message[] = []
-
       const triggerFinance = textToSubmit.includes("spend") || textToSubmit.includes("safe") || textToSubmit.includes("limit") || textToSubmit.includes("daily") || textToSubmit.includes("budget") || textToSubmit.includes("money") || textToSubmit.includes("impulse")
       const triggerGrowth = textToSubmit.includes("invest") || textToSubmit.includes("stock") || textToSubmit.includes("crypto") || textToSubmit.includes("gold") || textToSubmit.includes("growth") || textToSubmit.includes("opportunity") || textToSubmit.includes("market")
       const triggerSave = textToSubmit.includes("save") || textToSubmit.includes("goal") || textToSubmit.includes("fund") || textToSubmit.includes("laptop") || textToSubmit.includes("emergency")
       const triggerDebt = textToSubmit.includes("debt") || textToSubmit.includes("bnpl") || textToSubmit.includes("loan") || textToSubmit.includes("risk") || textToSubmit.includes("credit")
       const triggerBills = textToSubmit.includes("bill") || textToSubmit.includes("rent") || textToSubmit.includes("autopay") || textToSubmit.includes("commitment") || textToSubmit.includes("lock") || textToSubmit.includes("protected")
-      const triggerTransfer = textToSubmit.includes("transfer") || textToSubmit.includes("pay") || textToSubmit.includes("send") || textToSubmit.includes("to")
+      // More specific transfer triggers to avoid false positives with common words like 'to'
+      const triggerTransfer = textToSubmit.includes("transfer") || textToSubmit.includes("send") || (textToSubmit.includes("pay") && textToSubmit.includes("to"))
 
-      if (triggerFinance || (!triggerGrowth && !triggerSave && !triggerDebt && !triggerBills)) {
+      if (triggerTransfer) {
         responses.push({
           role: 'assistant',
           agent: 'Finance Strategist',
-          content: `Based on your current balance of RM ${user.currentBalance.toFixed(2)}, your absolute safe limit for today is RM ${safeDailySpend.toFixed(2)}. This ensures you stay on track for your upcoming bills.`
+          content: "I can help with that. I've prepared a transfer proposal based on your recent activity. Review the details below:",
+          proposal: {
+            name: 'Transfer to Aizat',
+            type: 'transfer',
+            amount: 50,
+            recipient: 'Aizat',
+            bank: 'Public Bank',
+            icon: '💸'
+          },
+          actions: [
+            {
+              id: 'approve_transfer',
+              label: 'Approve & Send',
+              type: 'transfer',
+              payload: { amount: 50, recipient: 'Aizat' }
+            },
+            {
+              id: 'postpone_transfer',
+              label: 'Decline',
+              type: 'postpone'
+            }
+          ]
         })
-      }
-
-      if (triggerSave) {
-        if (user.currentBalance > 1000) {
+      } else if (triggerBills) {
+        const lockedAmount = bills.filter(b => b.isLocked && b.status !== 'paid').reduce((sum, b) => sum + b.amount, 0);
+        const nextBill = bills.filter(b => b.status !== 'paid').sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime())[0];
+        
+        responses.push({
+          role: 'assistant',
+          agent: 'Finance Strategist',
+          content: `You have RM ${lockedAmount.toFixed(2)} protected for bills. ${nextBill ? `Your next bill is ${nextBill.name} due soon.` : 'No upcoming bills detected.'} Protecting your bill money early is why your spendable balance might look lower than your total balance.`
+        })
+      } else if (triggerSave) {
+        // Priority: Always show a proposal if they are asking about a specific goal like Laptop
+        if (textToSubmit.includes("laptop") || user.currentBalance > 1000) {
           responses.push({
             role: 'assistant',
             agent: 'Savings Sentinel',
-            content: `You have a healthy surplus (RM ${user.currentBalance.toFixed(2)}). I've prepared a proposal for your Laptop goal. Shall we execute it?`,
+            content: `I've analyzed your cashflow and your Laptop goal. You have a surplus that could be working harder for you. I've prepared a growth-mode proposal to help you reach your RM 2,500 target faster. Shall we execute it?`,
             proposal: {
               name: 'Laptop Fund',
               target: 2500,
@@ -169,61 +209,23 @@ export function Coach() {
             content: `Analyzing your goals... I see you're saving for a Laptop. If you maintain your current pace, you'll reach your RM 2,500 target in approximately 4 months.`
           })
         }
-      }
-
-      if (triggerDebt) {
+      } else if (triggerDebt) {
         responses.push({
           role: 'assistant',
           agent: 'Debt Shield',
           content: `Risk alert: I've scanned your recent transactions. You have no active BNPL installments, which is excellent for your Money Health score.`
         })
-      }
-
-      if (triggerGrowth) {
+      } else if (triggerGrowth) {
         responses.push({
           role: 'assistant',
           agent: 'Growth Guru',
           content: `The best growth opportunity right now is your ASB or high-yield savings account. Market volatility in crypto makes it a high-risk move for your current resilience level.`
         })
-      }
-
-      if (triggerBills) {
-        const lockedAmount = bills.filter(b => b.isLocked && b.status !== 'paid').reduce((sum, b) => sum + b.amount, 0);
-        const nextBill = bills.filter(b => b.status !== 'paid').sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime())[0];
-        
+      } else {
         responses.push({
           role: 'assistant',
           agent: 'Finance Strategist',
-          content: `You have RM ${lockedAmount.toFixed(2)} protected for bills. ${nextBill ? `Your next bill is ${nextBill.name} due soon.` : 'No upcoming bills detected.'} Protecting your bill money early is why your spendable balance might look lower than your total balance.`
-        })
-      }
-      
-      if (triggerTransfer) {
-        responses.push({
-          role: 'assistant',
-          agent: 'Finance Strategist',
-          content: "I can help with that. I've prepared a transfer proposal based on your recent activity. Review the details below:",
-          proposal: {
-            name: 'Transfer to Aizat',
-            type: 'transfer',
-            amount: 50,
-            recipient: 'Aizat',
-            bank: 'Public Bank',
-            icon: '💸'
-          },
-          actions: [
-            {
-              id: 'approve_transfer',
-              label: 'Approve & Send',
-              type: 'transfer',
-              payload: { amount: 50, recipient: 'Aizat' }
-            },
-            {
-              id: 'postpone_transfer',
-              label: 'Decline',
-              type: 'postpone'
-            }
-          ]
+          content: `Based on your current balance of RM ${user.currentBalance.toFixed(2)}, your absolute safe limit for today is RM ${safeDailySpend.toFixed(2)}. This ensures you stay on track for your upcoming bills.`
         })
       }
       setMessages([...newMessages, ...responses])
@@ -269,9 +271,11 @@ export function Coach() {
       </header>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-hidden relative flex flex-col">
-        <ScrollArea ref={scrollRef} className="flex-1 px-4">
-          <div className="space-y-6 py-6 min-h-full">
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 scroll-smooth bg-transparent"
+      >
+        <div className="space-y-6 py-6 min-h-full flex flex-col">
 
             <AnimatePresence mode="wait">
               {messages.length === 0 ? (
@@ -461,7 +465,6 @@ export function Coach() {
               )}
             </AnimatePresence>
           </div>
-        </ScrollArea>
       </div>
 
       {/* Sticky Chat Input Area — OUTSIDE the scroll container so it never disappears */}

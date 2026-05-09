@@ -221,7 +221,8 @@ const useStoreBase = create<ResilienceState>()(
         }
       },
       addSavingsPocket: (p) => set((state) => ({
-        savingsPockets: [...state.savingsPockets, p]
+        savingsPockets: [...state.savingsPockets, p],
+        user: { ...state.user, currentBalance: state.user.currentBalance - p.current }
       })),
       updateSavingsPocket: (id, updates) => set((state) => ({
         savingsPockets: state.savingsPockets.map(p =>

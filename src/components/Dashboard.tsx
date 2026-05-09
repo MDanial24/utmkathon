@@ -13,6 +13,7 @@ import { ResilienceModal } from "./ResilienceModal"
 import { TopUpModal } from "./TopUpModal"
 import Link from "next/link"
 import { t } from "@/lib/translations"
+import { BalanceDetailDrawer } from "./BalanceDetailDrawer"
 
 export function Dashboard() {
   const {
@@ -35,6 +36,7 @@ export function Dashboard() {
   const [showGuardModal, setShowGuardModal] = useState(false)
   const [showResilienceModal, setShowResilienceModal] = useState(false)
   const [showTopUpModal, setShowTopUpModal] = useState(false)
+  const [showBalanceDrawer, setShowBalanceDrawer] = useState(false)
   const strings = t[language]
 
   // Hydration guard for Next.js persisted state
@@ -190,8 +192,10 @@ export function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          onClick={() => setShowBalanceDrawer(true)}
+          className="cursor-pointer"
         >
-          <Card className="glass-card">
+          <Card className="glass-card hover:ring-primary/30 transition-all active:scale-[0.98]">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-xs text-muted-foreground flex items-center gap-2">
                 <Wallet className="w-3 h-3" /> {strings.dashBalance}
@@ -409,6 +413,11 @@ export function Dashboard() {
       <TopUpModal
         isOpen={showTopUpModal}
         onClose={() => setShowTopUpModal(false)}
+      />
+
+      <BalanceDetailDrawer
+        open={showBalanceDrawer}
+        onClose={() => setShowBalanceDrawer(false)}
       />
     </div>
   )
