@@ -11,7 +11,7 @@ import { t } from "@/lib/translations"
 
 export function Navbar() {
   const pathname = usePathname()
-  const { language } = useStore()
+  const { language, hasNotificationSave } = useStore()
   const strings = t[language]
 
   if (pathname === '/' || pathname === '/coach' || pathname === '/setup') return null
@@ -68,12 +68,25 @@ export function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => {
+                  if (item.href === "/savings") {
+                    useStore.setState({ hasNotificationSave: false })
+                  }
+                }}
                 className={cn(
-                  "flex flex-col items-center justify-center space-y-1 transition-all duration-300",
+                  "flex flex-col items-center justify-center space-y-1 transition-all duration-300 relative",
                   isActive ? "text-primary scale-110" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <item.icon className={cn("w-5 h-5", isActive && "text-glow")} />
+                <div className="relative">
+                  <item.icon className={cn("w-5 h-5", isActive && "text-glow")} />
+                  {item.href === "/savings" && hasNotificationSave && (
+                    <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] font-medium">{item.label}</span>
                 {isActive && (
                   <div className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full neon-border" />

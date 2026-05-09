@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
 import { Language } from '@/lib/translations';
 import { calculateNextDueDate, isBillDue, isAutoPaySafe } from '@/lib/billEngine';
@@ -22,6 +21,7 @@ export interface SavingsPocket {
   icon: string;
   mode: 'savings' | 'growth';
   riskLevel?: 'low' | 'medium' | 'high';
+  isMainGoal?: boolean;
 }
 
 export interface Agent {
@@ -107,9 +107,13 @@ interface ResilienceState {
   savingsPockets: SavingsPocket[];
   agents: Agent[];
   resilienceScore: number;
+  resilienceCashflowScore: number;
+  resilienceSavingsScore: number;
+  resilienceDebtScore: number;
   debtRiskScore: number;
   cashflowRisk: 'low' | 'medium' | 'high';
   safeDailySpend: number;
+  initialSafeDaily: number;
   isSpendGuardActive: boolean;
   isSurvivalModeActive: boolean;
   isAutoSaveActive: boolean;
@@ -123,6 +127,8 @@ interface ResilienceState {
   lastGrowthSimulationDate: string | null;
   isRoundUpActive: boolean;
   bills: Bill[];
+  pendingMainGoal: string | null;
+  hasNotificationSave: boolean;
   // Actions
   addTransaction: (t: Transaction, skipRoundUp?: boolean) => void;
   addSavingsPocket: (p: SavingsPocket) => void;
@@ -187,9 +193,13 @@ const initialStoreState = {
     { id: 'debt', name: 'Debt Shield Agent', status: 'idle' as const, latestFinding: 'No new debt detected.', confidence: 0.95, recommendedAction: 'Continue monitoring', tools: ['scan_bnpl', 'check_installments'] },
   ],
   resilienceScore: 68,
+  resilienceCashflowScore: 65,
+  resilienceSavingsScore: 40,
+  resilienceDebtScore: 95,
   debtRiskScore: 45,
   cashflowRisk: 'medium' as const,
   safeDailySpend: 18.5,
+  initialSafeDaily: 18.5,
   isSpendGuardActive: false,
   isSurvivalModeActive: false,
   isAutoSaveActive: false,
@@ -203,46 +213,133 @@ const initialStoreState = {
   lastGrowthSimulationDate: null,
   isRoundUpActive: true,
   bills: [],
+  pendingMainGoal: null,
+  hasNotificationSave: false,
 };
 
-// Raw store with persistence enabled
+// Raw store in-memory with zero local storage persistence to clean state on refresh
 const useStoreBase = create<ResilienceState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       ...initialStoreState,
       addTransaction: (t, skipRoundUp = false) => {
-        set((state) => ({ 
-          transactions: [t, ...state.transactions],
-          user: { ...state.user, currentBalance: state.user.currentBalance - (t.type === 'expense' ? t.amount : -t.amount) }
-        }));
+        set((state) => {
+          const nextTransactions = [t, ...state.transactions];
+          const updatedBalance = state.user.currentBalance - (t.type === 'expense' ? t.amount : -t.amount);
+          
+          let nextInitialSafeDaily = state.initialSafeDaily;
+          
+          // Recalculate and update initialSafeDaily if it is an income transaction (new money added)
+          if (t.type === 'income') {
+             // Calculate days remaining
+             const getDaysRemainingInternal = () => {
+               if (state.user.incomeSource === "fixed" && state.user.fixedFrequency === "weekly" && state.user.weeklyPayDay) {
+                 const daysMap: Record<string, number> = {
+                   sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+                 };
+                 const targetIndex = daysMap[state.user.weeklyPayDay.toLowerCase()] ?? 5;
+                 const today = new Date();
+                 const todayIndex = today.getDay();
+                 let diff = targetIndex - todayIndex;
+                 if (diff <= 0) diff += 7;
+                 return diff;
+               }
+               if (!state.user.nextAllowanceDate) return 14;
+               const today = new Date();
+               const nextDate = new Date(state.user.nextAllowanceDate);
+               const diffTime = nextDate.getTime() - today.getTime();
+               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+               return diffDays > 0 ? diffDays : 30;
+             };
+
+             const daysLeft = getDaysRemainingInternal();
+             const totalCommitments = state.user.totalCommitments || 0;
+             let calculatedDaily = 15.0;
+
+             if (state.user.incomeSource === "fixed") {
+               if (state.user.fixedFrequency === "weekly") {
+                 const weeklyCommitment = totalCommitments / 4;
+                 const remainingBalance = Math.max(0, updatedBalance - weeklyCommitment);
+                 calculatedDaily = daysLeft > 0 ? remainingBalance / daysLeft : remainingBalance;
+               } else {
+                 const remainingBalance = Math.max(0, updatedBalance - totalCommitments);
+                 calculatedDaily = daysLeft > 0 ? remainingBalance / daysLeft : remainingBalance;
+               }
+             } else {
+               // lump-sum / irregular / none
+               const start = state.user.lumpStartDate ? new Date(state.user.lumpStartDate) : (state.user.setupDate ? new Date(state.user.setupDate) : new Date());
+               const duration = state.user.durationDays || 30;
+               const end = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000);
+               const today = new Date();
+               const diffTime = end.getTime() - today.getTime();
+               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+               const remainingDays = diffDays > 0 ? diffDays : duration;
+               const remainingMonths = remainingDays / 30;
+               const commitmentsForRemainingPeriod = totalCommitments * remainingMonths;
+               const remainingBalance = Math.max(0, updatedBalance - commitmentsForRemainingPeriod);
+               calculatedDaily = remainingBalance / remainingDays;
+             }
+
+             const flooredDaily = Math.floor(calculatedDaily * 100) / 100;
+             nextInitialSafeDaily = flooredDaily > 0 ? flooredDaily : 15.0;
+          }
+
+          return {
+            transactions: nextTransactions,
+            user: { ...state.user, currentBalance: updatedBalance },
+            initialSafeDaily: nextInitialSafeDaily
+          };
+        });
         
         if (!skipRoundUp && t.type === 'expense') {
           get().processRoundUp(t.amount);
         }
+        get().updateResilienceScore();
       },
-      addSavingsPocket: (p) => set((state) => ({
-        savingsPockets: [...state.savingsPockets, p],
-        user: { ...state.user, currentBalance: state.user.currentBalance - p.current }
-      })),
-      updateSavingsPocket: (id, updates) => set((state) => ({
-        savingsPockets: state.savingsPockets.map(p =>
-          p.id === id ? { ...p, ...updates } : p
-        )
-      })),
-      deleteSavingsPocket: (id) => set((state) => {
-        const pocket = state.savingsPockets.find(p => p.id === id);
-        if (!pocket) return state;
-        return {
-          savingsPockets: state.savingsPockets.filter(p => p.id !== id),
-          user: { ...state.user, currentBalance: state.user.currentBalance + pocket.current }
-        };
-      }),
-      addFundsToPocket: (id, amount) => set((state) => ({
-        savingsPockets: state.savingsPockets.map(p =>
-          p.id === id ? { ...p, current: p.current + amount } : p
-        ),
-        user: { ...state.user, currentBalance: state.user.currentBalance - amount }
-      })),
+      addSavingsPocket: (p) => {
+        set((state) => {
+          const cleanedPockets = p.isMainGoal
+            ? state.savingsPockets.map(pocket => ({ ...pocket, isMainGoal: false }))
+            : state.savingsPockets;
+          return {
+            savingsPockets: [...cleanedPockets, p],
+            user: { ...state.user, currentBalance: state.user.currentBalance - p.current }
+          };
+        });
+        get().updateResilienceScore();
+      },
+      updateSavingsPocket: (id, updates) => {
+        set((state) => {
+          const cleanedPockets = updates.isMainGoal
+            ? state.savingsPockets.map(pocket => pocket.id === id ? pocket : { ...pocket, isMainGoal: false })
+            : state.savingsPockets;
+          return {
+            savingsPockets: cleanedPockets.map(p =>
+              p.id === id ? { ...p, ...updates } : p
+            )
+          };
+        });
+        get().updateResilienceScore();
+      },
+      deleteSavingsPocket: (id) => {
+        set((state) => {
+          const pocket = state.savingsPockets.find(p => p.id === id);
+          if (!pocket) return state;
+          return {
+            savingsPockets: state.savingsPockets.filter(p => p.id !== id),
+            user: { ...state.user, currentBalance: state.user.currentBalance + pocket.current }
+          };
+        });
+        get().updateResilienceScore();
+      },
+      addFundsToPocket: (id, amount) => {
+        set((state) => ({
+          savingsPockets: state.savingsPockets.map(p =>
+            p.id === id ? { ...p, current: p.current + amount } : p
+          ),
+          user: { ...state.user, currentBalance: state.user.currentBalance - amount }
+        }));
+        get().updateResilienceScore();
+      },
       toggleSpendGuard: () => set((state) => ({ isSpendGuardActive: !state.isSpendGuardActive })),
       toggleSurvivalMode: () => set((state) => ({ isSurvivalModeActive: !state.isSurvivalModeActive })),
       toggleAutoSave: () => set((state) => ({ isAutoSaveActive: !state.isAutoSaveActive })),
@@ -331,7 +428,43 @@ const useStoreBase = create<ResilienceState>()(
         };
       }),
       updateResilienceScore: () => {
-        // Logic to recalculate based on state
+        set((state) => {
+          // 1. Cashflow Safety (50% Weight)
+          // Compare Actual Daily Spending vs. Safe Daily Spend Quota. If Actual > Safe, the score drops.
+          const todayStr = new Date().toDateString();
+          const todayExpenses = state.transactions
+            .filter(t => t.type === 'expense' && new Date(t.date).toDateString() === todayStr)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+          const safeQuota = state.initialSafeDaily || 15.0;
+          const cashflowScore = todayExpenses <= safeQuota 
+            ? 100 
+            : Math.max(0, 100 - ((todayExpenses - safeQuota) / safeQuota) * 100);
+
+          // 2. Savings Progress (20% Weight)
+          // Current Saved Amount vs. Total Goal Target
+          const currentSaved = state.savingsPockets.reduce((sum, p) => sum + p.current, 0) + (state.user.currentEmergencyFund || 0);
+          const targetSaved = state.savingsPockets.reduce((sum, p) => sum + p.target, 0) + (state.user.emergencyFundGoal || 500);
+          const savingsScore = targetSaved > 0 ? Math.min(100, (currentSaved / targetSaved) * 100) : 50;
+
+          // 3. Debt Health (30% Weight)
+          // Simple Formula: (1 - (total commitment / total balance)) * 100
+          const commitments = state.user.totalCommitments || 0;
+          const totalBalance = state.user.currentBalance || 800;
+          const debtScore = totalBalance > 0 
+            ? Math.max(0, Math.min(100, (1 - (commitments / totalBalance)) * 100)) 
+            : 100;
+
+          // Total Resilience Score weighted calculation
+          const finalScore = Math.round((0.5 * cashflowScore) + (0.3 * debtScore) + (0.2 * savingsScore));
+          
+          return {
+            resilienceScore: finalScore,
+            resilienceCashflowScore: Math.round(cashflowScore),
+            resilienceSavingsScore: Math.round(savingsScore),
+            resilienceDebtScore: Math.round(debtScore)
+          };
+        });
       },
       setLanguage: (lang) => set({ language: lang }),
 
@@ -445,11 +578,7 @@ const useStoreBase = create<ResilienceState>()(
           }
         });
       }
-    }),
-    {
-      name: 'resilience-agent-storage',
-    }
-  )
+    })
 );
 
 interface UseStoreHook {

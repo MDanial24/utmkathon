@@ -25,7 +25,7 @@ interface SavingsModalProps {
 const EMOJI_OPTIONS = ["🛡️", "💻", "🏠", "🚗", "✈️", "🎓", "🎮", "🎁", "🏥", "💰", "💍", "🎨", "🍔", "👟"]
 
 export function SavingsModal({ isOpen, onClose, editPocket }: SavingsModalProps) {
-  const { addSavingsPocket, updateSavingsPocket, language } = useStore()
+  const { addSavingsPocket, updateSavingsPocket, language, pendingMainGoal } = useStore()
   const strings = t[language]
 
   const [name, setName] = useState("")
@@ -41,6 +41,36 @@ export function SavingsModal({ isOpen, onClose, editPocket }: SavingsModalProps)
       setIcon(editPocket.icon)
       setMode(editPocket.mode)
       setRiskLevel(editPocket.riskLevel || 'low')
+    } else if (pendingMainGoal) {
+      if (pendingMainGoal === "Other") {
+        setName("")
+        setTarget("")
+        setIcon("💰")
+        setMode('savings')
+        setRiskLevel('low')
+      } else {
+        setName(pendingMainGoal)
+        setTarget("")
+        
+        const goalIcons: Record<string, string> = {
+          "Emergency Fund": "🛡️",
+          "Laptop Fund": "💻",
+          "Rent Buffer": "🏠",
+          "Travel": "✈️",
+          "Investment Starter": "📈",
+        }
+        setIcon(goalIcons[pendingMainGoal] || "💰")
+
+        const goalModes: Record<string, 'savings' | 'growth'> = {
+          "Emergency Fund": "savings",
+          "Laptop Fund": "growth",
+          "Rent Buffer": "savings",
+          "Travel": "savings",
+          "Investment Starter": "growth",
+        }
+        setMode(goalModes[pendingMainGoal] || "savings")
+        setRiskLevel("medium")
+      }
     } else {
       setName("")
       setTarget("")
@@ -48,7 +78,14 @@ export function SavingsModal({ isOpen, onClose, editPocket }: SavingsModalProps)
       setMode('savings')
       setRiskLevel('low')
     }
-  }, [editPocket, isOpen])
+  }, [editPocket, isOpen, pendingMainGoal])
+
+  const handleClose = () => {
+    if (pendingMainGoal) {
+      useStore.setState({ pendingMainGoal: null })
+    }
+    onClose()
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,13 +106,18 @@ export function SavingsModal({ isOpen, onClose, editPocket }: SavingsModalProps)
         ...pocketData,
         id: Math.random().toString(36).substr(2, 9),
         current: 0,
+        isMainGoal: !!pendingMainGoal,
       } as SavingsPocket)
+
+      if (pendingMainGoal) {
+        useStore.setState({ pendingMainGoal: null })
+      }
     }
     onClose()
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[calc(100vw-32px)] max-w-[380px] rounded-3xl glass-card border-white/10 text-foreground p-0 overflow-hidden flex flex-col gap-0 max-h-[calc(100vh-2rem)]">
         <form onSubmit={handleSubmit} className="flex flex-col min-h-0 max-h-[calc(100vh-2rem)] overflow-hidden">
           
@@ -84,11 +126,18 @@ export function SavingsModal({ isOpen, onClose, editPocket }: SavingsModalProps)
             
             {/* Header */}
             <DialogHeader className="p-0">
-              <DialogTitle className="text-base font-bold flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                  <Target className="w-4 h-4 text-primary" />
+              <DialogTitle className="text-base font-bold flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                    <Target className="w-4 h-4 text-primary" />
+                  </div>
+                  <span>{editPocket ? strings.saveEditPocket : strings.saveCreatePocket}</span>
                 </div>
-                {editPocket ? strings.saveEditPocket : strings.saveCreatePocket}
+                {pendingMainGoal && !editPocket && (
+                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[8px] uppercase tracking-wider font-bold animate-pulse px-2 py-0.5 rounded-full shrink-0">
+                    🎯 Main Goal
+                  </Badge>
+                )}
               </DialogTitle>
             </DialogHeader>
 

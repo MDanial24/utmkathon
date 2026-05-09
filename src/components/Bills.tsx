@@ -1,6 +1,6 @@
 "use client"
 
-import { useStore } from "@/store/useStore"
+import { Bill, useStore } from "@/store/useStore"
 import { t } from "@/lib/translations"
 import { motion, AnimatePresence } from "framer-motion"
 import { 

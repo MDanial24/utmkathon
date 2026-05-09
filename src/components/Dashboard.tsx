@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
-import { TrendingUp, AlertTriangle, ShieldCheck, Wallet, Calendar, Settings as SettingsIcon, QrCode, Send, History, CalendarClock } from "lucide-react"
+import { TrendingUp, AlertTriangle, ShieldCheck, Wallet, Calendar, Settings as SettingsIcon, QrCode, Send, History, CalendarClock, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { SpendGuardModal } from "./BudgetGuardModal"
@@ -20,6 +20,8 @@ export function Dashboard() {
     user,
     resilienceScore,
     safeDailySpend,
+    initialSafeDaily,
+    transactions,
     cashflowRisk,
     debtRiskScore,
     language,
@@ -37,7 +39,15 @@ export function Dashboard() {
   const [showResilienceModal, setShowResilienceModal] = useState(false)
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [showBalanceDrawer, setShowBalanceDrawer] = useState(false)
+  const [safeDailyView, setSafeDailyView] = useState<'quota' | 'average'>('quota')
   const strings = t[language]
+
+  // Calculate today's spending & quota remaining
+  const todayStr = new Date().toDateString()
+  const todayExpenses = transactions
+    .filter(t => t.type === 'expense' && new Date(t.date).toDateString() === todayStr)
+    .reduce((sum, t) => sum + t.amount, 0)
+  const quotaRemaining = initialSafeDaily - todayExpenses
 
   // Hydration guard for Next.js persisted state
   const [hasHydrated, setHasHydrated] = useState(false)
@@ -45,6 +55,7 @@ export function Dashboard() {
     setHasHydrated(true)
     processAutoSave()
     simulateGrowth()
+    useStore.getState().updateResilienceScore()
   }, [])
 
   const getDaysRemaining = () => {
@@ -132,33 +143,37 @@ export function Dashboard() {
     return flooredDaily > 0 ? flooredDaily : 15.0
   }
 
-  const getPlanTitle = () => {
-    if (!user.incomeSource) return "Safe Daily"
+  // Synchronize store's safeDailySpend with getDynamicSafeDaily() calculation
+  const dynamicSafe = getDynamicSafeDaily()
+  useEffect(() => {
+    if (hasHydrated && dynamicSafe !== safeDailySpend) {
+      useStore.setState({ safeDailySpend: dynamicSafe })
+    }
+  }, [hasHydrated, dynamicSafe, safeDailySpend])
 
-    let planName = "Monthly Plan"
+  const getPlanName = () => {
+    if (!user.incomeSource) return "Monthly Plan"
 
     if (user.incomeSource === "fixed") {
       if (user.fixedFrequency === "weekly") {
-        planName = "Weekly Plan"
+        return "Weekly Plan"
       } else {
-        planName = "Monthly Plan"
+        return "Monthly Plan"
       }
     } else if (user.incomeSource === "lump-sum") {
       const dur = user.lumpDuration || 6
       const unit = user.lumpDurationUnit || "month"
       const capitalizedUnit = unit.charAt(0).toUpperCase() + unit.slice(1)
       const pluralSuffix = dur > 1 ? "s" : ""
-      planName = `${dur} ${capitalizedUnit}${pluralSuffix} Plan`
+      return `${dur} ${capitalizedUnit}${pluralSuffix} Plan`
     } else {
       // irregular / none
       const dur = user.runwayDuration || 3
       const unit = user.runwayDurationUnit || "month"
       const capitalizedUnit = unit.charAt(0).toUpperCase() + unit.slice(1)
       const pluralSuffix = dur > 1 ? "s" : ""
-      planName = `${dur} ${capitalizedUnit}${pluralSuffix} Plan`
+      return `${dur} ${capitalizedUnit}${pluralSuffix} Plan`
     }
-
-    return `Safe Daily (${planName})`
   }
 
   if (!hasHydrated) return null;
@@ -169,7 +184,7 @@ export function Dashboard() {
       <header className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{strings.dashGreeting}, {user.name}</h1>
-          <p className="text-muted-foreground text-sm">{strings.dashStatus}: <span className="text-primary font-medium">{resilienceScore > 70 ? strings.dashStrong : strings.dashWatch}</span></p>
+          <p className="text-muted-foreground text-sm font-medium text-primary/80">{getPlanName()}</p>
         </div>
         <div className="flex items-center gap-3">
 
@@ -213,15 +228,62 @@ export function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="glass-card border-primary/20">
-            <CardHeader className="p-4 pb-0">
-              <CardTitle className="text-xs text-primary flex items-center gap-2">
-                <ShieldCheck className="w-3 h-3" /> {getPlanTitle()}
+          <Card 
+            className={cn(
+              "glass-card border-primary/20 transition-all duration-300 cursor-pointer select-none relative overflow-hidden h-full flex flex-col justify-between",
+              safeDailyView === 'quota' && quotaRemaining < 0 && "border-rose-500/30 bg-rose-500/5 shadow-lg shadow-rose-500/5"
+            )}
+            onClick={() => setSafeDailyView(safeDailyView === 'quota' ? 'average' : 'quota')}
+          >
+            <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className={cn(
+                "text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5 transition-colors",
+                safeDailyView === 'quota' && quotaRemaining < 0 ? "text-rose-400" : "text-primary"
+              )}>
+                <ShieldCheck className="w-3.5 h-3.5" /> {safeDailyView === 'quota' ? "Today's Quota" : "Safe Daily"}
               </CardTitle>
+              {/* Segment Pill indicator */}
+              <div className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full bg-foreground/5 text-muted-foreground/80 border border-border">
+                {safeDailyView === 'quota' ? "Quota" : "Average"}
+              </div>
             </CardHeader>
-            <CardContent className="p-4">
-              <p className="text-xl font-bold text-primary text-glow">RM {getDynamicSafeDaily().toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground">{strings.dashLimitsImpulse}</p>
+            <CardContent className="p-4 pt-3 flex-1 flex flex-col justify-center">
+              <div>
+                {safeDailyView === 'quota' ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <p className={cn(
+                        "text-xl font-black text-glow tracking-tight leading-none",
+                        quotaRemaining < 0 ? "text-rose-500" : "text-emerald-400"
+                      )}>
+                        {quotaRemaining < 0 ? "-" : ""}RM {Math.abs(quotaRemaining).toFixed(2)}
+                      </p>
+                      <RefreshCw className={cn(
+                        "w-4 h-4 shrink-0 opacity-40 hover:opacity-100 transition-opacity",
+                        quotaRemaining < 0 ? "text-rose-400" : "text-emerald-400"
+                      )} />
+                    </div>
+                    <p className="text-[9px] text-muted-foreground mt-1.5 leading-relaxed font-medium">
+                      {quotaRemaining < 0 
+                        ? `Overspent by RM ${Math.abs(quotaRemaining).toFixed(2)} today!`
+                        : `RM ${quotaRemaining.toFixed(2)} left of your RM ${initialSafeDaily.toFixed(2)} limit`
+                      }
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xl font-black text-primary text-glow tracking-tight leading-none">
+                        RM {safeDailySpend.toFixed(2)}
+                      </p>
+                      <RefreshCw className="w-4 h-4 shrink-0 text-primary opacity-40 hover:opacity-100 transition-opacity" />
+                    </div>
+                    <p className="text-[9px] text-muted-foreground mt-1.5 leading-relaxed font-medium">
+                      {strings.dashLimitsImpulse}
+                    </p>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
