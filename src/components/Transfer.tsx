@@ -4,7 +4,7 @@ import { useStore } from "@/store/useStore"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Send, BrainCircuit, User } from "lucide-react"
+import { ArrowLeft, Send, BrainCircuit, User, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -17,7 +17,8 @@ export function Transfer() {
   const [isProcessing, setIsProcessing] = useState(false)
 
   const numAmount = parseFloat(amount)
-  const prediction = !isNaN(numAmount) && numAmount > 0
+  const hasInsufficientBalance = !isNaN(numAmount) && numAmount > user.currentBalance
+  const prediction = !isNaN(numAmount) && numAmount > 0 && !hasInsufficientBalance
     ? numAmount > safeDailySpend * 3
       ? `Sending RM${numAmount} will move your Broke Date 4 days earlier. Are you sure this is necessary?`
       : numAmount > safeDailySpend
@@ -90,6 +91,25 @@ export function Transfer() {
 
         {/* AI Interception */}
         <AnimatePresence>
+          {hasInsufficientBalance && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0, scale: 0.95 }}
+              animate={{ opacity: 1, height: "auto", scale: 1 }}
+              exit={{ opacity: 0, height: 0, scale: 0.95 }}
+              className="overflow-hidden"
+            >
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-rose-600">Insufficient Balance</p>
+                  <p className="text-xs text-rose-800/80 leading-relaxed">
+                    You cannot transfer more than your available wallet balance of RM {user.currentBalance.toFixed(2)}. Please top up your wallet.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {prediction && (
             <motion.div 
               initial={{ opacity: 0, height: 0, scale: 0.95 }}
@@ -123,10 +143,15 @@ export function Transfer() {
       <div className="p-4 bg-white border-t border-slate-200 pb-safe">
         <Button 
           onClick={handleTransfer}
-          disabled={!amount || isProcessing}
-          className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-xl flex gap-2"
+          disabled={!amount || isProcessing || hasInsufficientBalance}
+          className={`w-full h-14 font-bold rounded-2xl shadow-xl flex gap-2 justify-center items-center ${
+            hasInsufficientBalance 
+              ? "bg-rose-500 hover:bg-rose-600 text-white cursor-not-allowed" 
+              : "bg-primary hover:bg-primary/90 text-white"
+          }`}
         >
-          {isProcessing ? "Processing..." : "Transfer Now"} <Send className="w-4 h-4 ml-2" />
+          {isProcessing ? "Processing..." : hasInsufficientBalance ? "Insufficient Balance" : "Transfer Now"} 
+          {!hasInsufficientBalance && <Send className="w-4 h-4 ml-2" />}
         </Button>
       </div>
     </div>
