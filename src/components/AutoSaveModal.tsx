@@ -20,10 +20,10 @@ interface AutoSaveModalProps {
 }
 
 export function AutoSaveModal({ isOpen, onClose }: AutoSaveModalProps) {
-  const { 
-    savingsPockets, 
-    autoSaveFrequency, 
-    autoSaveAmount, 
+  const {
+    savingsPockets,
+    autoSaveFrequency,
+    autoSaveAmount,
     autoSaveTargetIds,
     setAutoSaveTargetIds,
     isAutoSaveActive
@@ -43,9 +43,9 @@ export function AutoSaveModal({ isOpen, onClose }: AutoSaveModalProps) {
   }, [isOpen, autoSaveFrequency, autoSaveAmount, autoSaveTargetIds])
 
   const toggleTarget = (id: string) => {
-    setSelectedIds(prev => 
-      prev.includes(id) 
-        ? prev.filter(i => i !== id) 
+    setSelectedIds(prev =>
+      prev.includes(id)
+        ? prev.filter(i => i !== id)
         : [...prev, id]
     )
   }
@@ -60,7 +60,7 @@ export function AutoSaveModal({ isOpen, onClose }: AutoSaveModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     useStore.setState({
       autoSaveFrequency: frequency,
       autoSaveAmount: parseFloat(amount),
@@ -81,7 +81,7 @@ export function AutoSaveModal({ isOpen, onClose }: AutoSaveModalProps) {
             <Calendar className="w-5 h-5 text-primary" /> Setup Auto-Save
           </DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           {/* Frequency */}
           <div className="space-y-3">
@@ -96,8 +96,8 @@ export function AutoSaveModal({ isOpen, onClose }: AutoSaveModalProps) {
                   onClick={() => setFrequency(f as any)}
                   className={cn(
                     "py-2 rounded-xl text-[10px] font-bold border transition-all capitalize",
-                    frequency === f 
-                      ? "bg-primary text-slate-900 border-primary shadow-lg shadow-primary/20" 
+                    frequency === f
+                      ? "bg-primary text-slate-900 border-primary shadow-lg shadow-primary/20"
                       : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
                   )}
                 >
@@ -129,15 +129,15 @@ export function AutoSaveModal({ isOpen, onClose }: AutoSaveModalProps) {
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Target className="w-3 h-3" /> Select Destinations
               </label>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={selectAll}
                 className="text-[10px] font-bold text-primary hover:underline transition-all"
               >
                 {allSelected ? "Deselect All" : "Select All"}
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 gap-2 max-h-[180px] overflow-y-auto pr-1 scrollbar-hide">
               {savingsPockets.map((p) => {
                 const isSelected = selectedIds.includes(p.id)
@@ -148,8 +148,8 @@ export function AutoSaveModal({ isOpen, onClose }: AutoSaveModalProps) {
                     onClick={() => toggleTarget(p.id)}
                     className={cn(
                       "p-3 rounded-xl border flex items-center justify-between transition-all",
-                      isSelected 
-                        ? "bg-primary/10 border-primary/50" 
+                      isSelected
+                        ? "bg-primary/10 border-primary/50"
                         : "bg-white/5 border-white/10 hover:bg-white/10"
                     )}
                   >
@@ -183,8 +183,8 @@ export function AutoSaveModal({ isOpen, onClose }: AutoSaveModalProps) {
           </div>
 
           <DialogFooter className="pt-2">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={selectedIds.length === 0 || !amount || parseFloat(amount) <= 0}
               className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-slate-900 font-bold text-sm shadow-lg shadow-primary/20 disabled:opacity-50 disabled:grayscale"
             >

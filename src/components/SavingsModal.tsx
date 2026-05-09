@@ -77,10 +77,10 @@ export function SavingsModal({ isOpen, onClose, editPocket }: SavingsModalProps)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[calc(100vw-32px)] max-w-[380px] rounded-3xl glass-card border-white/10 text-foreground p-0 overflow-hidden">
-        <form onSubmit={handleSubmit} className="flex flex-col max-h-[85vh]">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 max-h-[calc(100vh-4rem)]">
           
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide p-5 space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide p-5 space-y-4">
             
             {/* Header */}
             <DialogHeader className="p-0">

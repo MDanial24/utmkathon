@@ -62,9 +62,11 @@ interface ResilienceState {
   pet: {
     message: string;
   };
-  
+  lastGrowthSimulationDate: string | null;
+  isRoundUpActive: boolean;
+
   // Actions
-  addTransaction: (t: Transaction) => void;
+  addTransaction: (t: Transaction, skipRoundUp?: boolean) => void;
   addSavingsPocket: (p: SavingsPocket) => void;
   updateSavingsPocket: (id: string, updates: Partial<SavingsPocket>) => void;
   deleteSavingsPocket: (id: string) => void;
@@ -72,11 +74,20 @@ interface ResilienceState {
   toggleSpendGuard: () => void;
   toggleSurvivalMode: () => void;
   toggleAutoSave: () => void;
+  toggleRoundUp: () => void;
   setAutoSaveTargetIds: (ids: string[]) => void;
   processAutoSave: () => void;
+  processRoundUp: (amount: number) => void;
+  simulateGrowth: () => void;
   updateResilienceScore: () => void;
   setLanguage: (lang: Language) => void;
 }
+
+const RISK_RETURNS = {
+  low: 0.035, // 3.5% p.a.
+  medium: 0.042, // 4.2% p.a.
+  high: 0.065, // 6.5% p.a.
+};
 
 const initialStoreState = {
   language: 'en' as Language,
@@ -122,6 +133,8 @@ const initialStoreState = {
   pet: {
     message: 'Stay focused!'
   },
+  lastGrowthSimulationDate: null,
+  isRoundUpActive: true,
 };
 
 // Raw store with persistence enabled
@@ -129,15 +142,21 @@ const useStoreBase = create<ResilienceState>()(
   persist(
     (set, get) => ({
       ...initialStoreState,
-      addTransaction: (t) => set((state) => ({ 
-        transactions: [t, ...state.transactions],
-        user: { ...state.user, currentBalance: state.user.currentBalance - (t.type === 'expense' ? t.amount : -t.amount) }
-      })),
+      addTransaction: (t, skipRoundUp = false) => {
+        set((state) => ({ 
+          transactions: [t, ...state.transactions],
+          user: { ...state.user, currentBalance: state.user.currentBalance - (t.type === 'expense' ? t.amount : -t.amount) }
+        }));
+        
+        if (!skipRoundUp && t.type === 'expense') {
+          get().processRoundUp(t.amount);
+        }
+      },
       addSavingsPocket: (p) => set((state) => ({
         savingsPockets: [...state.savingsPockets, p]
       })),
       updateSavingsPocket: (id, updates) => set((state) => ({
-        savingsPockets: state.savingsPockets.map(p => 
+        savingsPockets: state.savingsPockets.map(p =>
           p.id === id ? { ...p, ...updates } : p
         )
       })),
@@ -150,7 +169,7 @@ const useStoreBase = create<ResilienceState>()(
         };
       }),
       addFundsToPocket: (id, amount) => set((state) => ({
-        savingsPockets: state.savingsPockets.map(p => 
+        savingsPockets: state.savingsPockets.map(p =>
           p.id === id ? { ...p, current: p.current + amount } : p
         ),
         user: { ...state.user, currentBalance: state.user.currentBalance - amount }
@@ -158,11 +177,12 @@ const useStoreBase = create<ResilienceState>()(
       toggleSpendGuard: () => set((state) => ({ isSpendGuardActive: !state.isSpendGuardActive })),
       toggleSurvivalMode: () => set((state) => ({ isSurvivalModeActive: !state.isSurvivalModeActive })),
       toggleAutoSave: () => set((state) => ({ isAutoSaveActive: !state.isAutoSaveActive })),
+      toggleRoundUp: () => set((state) => ({ isRoundUpActive: !state.isRoundUpActive })),
       setAutoSaveTargetIds: (ids) => set({ autoSaveTargetIds: ids }),
       processAutoSave: () => set((state) => {
         const today = new Date();
         const todayStr = today.toDateString();
-        
+
         if (!state.isAutoSaveActive || state.lastAutoSaveDate === todayStr || state.autoSaveTargetIds.length === 0) return state;
 
         // Mock frequency logic for demo
@@ -170,9 +190,9 @@ const useStoreBase = create<ResilienceState>()(
         if (state.autoSaveFrequency === 'monthly' && today.getDate() !== 1) return state; // Only 1st of month
 
         const totalAmount = state.autoSaveAmount;
-        
+
         if (state.user.currentBalance < 20) {
-          return { 
+          return {
             lastAutoSaveDate: todayStr,
             pet: { message: "Auto-save paused: Balance too low!" }
           };
@@ -191,6 +211,54 @@ const useStoreBase = create<ResilienceState>()(
           user: { ...state.user, currentBalance: state.user.currentBalance - totalAmount },
           savingsPockets: newPockets,
           pet: { message: `Nice! Saved RM ${totalAmount.toFixed(2)} automatically today.` }
+        };
+      }),
+      processRoundUp: (amount) => set((state) => {
+        if (!state.isRoundUpActive || state.autoSaveTargetIds.length === 0) return state;
+        
+        const nextDollar = Math.ceil(amount);
+        const roundUp = nextDollar - amount;
+        
+        if (roundUp <= 0) return state;
+        if (state.user.currentBalance < roundUp) return state;
+
+        const splitAmount = roundUp / state.autoSaveTargetIds.length;
+        const newPockets = state.savingsPockets.map(p => {
+          if (state.autoSaveTargetIds.includes(p.id)) {
+            return { ...p, current: p.current + splitAmount };
+          }
+          return p;
+        });
+
+        return {
+          user: { ...state.user, currentBalance: state.user.currentBalance - roundUp },
+          savingsPockets: newPockets,
+          pet: { message: `Spare change alert! RM ${roundUp.toFixed(2)} rounded up into pockets.` }
+        };
+      }),
+      simulateGrowth: () => set((state) => {
+        const today = new Date().toDateString();
+        if (state.lastGrowthSimulationDate === today) return state;
+
+        let totalGrowth = 0;
+        const newPockets = state.savingsPockets.map(p => {
+          if (p.mode === 'growth' && p.riskLevel) {
+            const annualRate = RISK_RETURNS[p.riskLevel];
+            // Simulate daily growth (compounded daily for effect)
+            const dailyRate = annualRate / 365;
+            const growth = p.current * dailyRate;
+            totalGrowth += growth;
+            return { ...p, current: p.current + growth };
+          }
+          return p;
+        });
+
+        if (totalGrowth === 0) return { lastGrowthSimulationDate: today };
+
+        return {
+          savingsPockets: newPockets,
+          lastGrowthSimulationDate: today,
+          pet: { message: `Market update: Your growth pockets earned RM ${totalGrowth.toFixed(2)} today! 📈` }
         };
       }),
       updateResilienceScore: () => {
@@ -231,14 +299,17 @@ export const useStore = (() => {
       toggleSpendGuard: storeState.toggleSpendGuard,
       toggleSurvivalMode: storeState.toggleSurvivalMode,
       toggleAutoSave: storeState.toggleAutoSave,
+      toggleRoundUp: storeState.toggleRoundUp,
       setAutoSaveTargetIds: storeState.setAutoSaveTargetIds,
       processAutoSave: storeState.processAutoSave,
+      processRoundUp: storeState.processRoundUp,
+      simulateGrowth: storeState.simulateGrowth,
       updateResilienceScore: storeState.updateResilienceScore,
       setLanguage: storeState.setLanguage,
     };
 
-    const stateToUse = hydrated 
-      ? storeState 
+    const stateToUse = hydrated
+      ? storeState
       : { ...initialStoreState, ...actions };
 
     // Apply selector if provided, otherwise cast whole state

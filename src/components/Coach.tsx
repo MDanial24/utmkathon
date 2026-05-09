@@ -21,12 +21,27 @@ const AGENTS = [
   { id: 'finance', name: 'Finance Strategist', icon: Brain, color: 'text-amber-500', bg: 'bg-amber-500/10' },
 ]
 
+interface ChatAction {
+  id: string;
+  label: string;
+  type: 'create_pocket' | 'postpone' | 'prioritize_emergency';
+  payload?: any;
+}
+
+interface Message {
+  role: 'user' | 'assistant';
+  agent?: string;
+  content: string;
+  actions?: ChatAction[];
+  proposal?: any; // New field for interactive card preview
+}
+
 export function Coach() {
-  const { user, safeDailySpend, resilienceScore, language } = useStore()
+  const { user, safeDailySpend, resilienceScore, language, addSavingsPocket, savingsPockets } = useStore()
   const strings = t[language]
   const scrollRef = useRef<HTMLDivElement>(null)
-  
-  const [messages, setMessages] = useState<any[]>([])
+
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isThinking, setIsThinking] = useState(false)
 
@@ -40,10 +55,40 @@ export function Coach() {
     }
   }, [messages, isThinking])
 
+  const handleAction = (action: ChatAction) => {
+    let responseText = "";
+
+    switch (action.type) {
+      case 'create_pocket':
+        addSavingsPocket({
+          id: Math.random().toString(36).substring(2, 11),
+          name: action.payload.name,
+          target: action.payload.target,
+          current: action.payload.current || 0,
+          icon: action.payload.icon || '💰',
+          mode: 'savings'
+        });
+        responseText = `Done! I've set up your ${action.payload.name} pocket with an initial RM ${action.payload.current}. Your Resilience Score is recalculating...`;
+        break;
+      case 'postpone':
+        responseText = "Wise choice. We'll revisit this goal when your liquidity improves.";
+        break;
+      case 'prioritize_emergency':
+        responseText = "I've noted your focus on the Emergency Fund. Your safety net is your priority.";
+        break;
+    }
+
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: action.label },
+      { role: 'assistant', agent: 'Savings Sentinel', content: responseText }
+    ]);
+  }
+
   const sendMessage = (overrideText?: string) => {
     const textToSubmit = (overrideText || input).toLowerCase();
     if (!textToSubmit.trim() || isThinking) return
-    
+
     const newMessages = [...messages, { role: 'user', content: overrideText || input }]
     setMessages(newMessages)
     if (!overrideText) setInput("")
@@ -52,7 +97,7 @@ export function Coach() {
     // Council dispatch logic
     setTimeout(() => {
       const responses: any[] = []
-      
+
       const triggerFinance = textToSubmit.includes("spend") || textToSubmit.includes("safe") || textToSubmit.includes("limit") || textToSubmit.includes("daily") || textToSubmit.includes("budget") || textToSubmit.includes("money") || textToSubmit.includes("impulse")
       const triggerGrowth = textToSubmit.includes("invest") || textToSubmit.includes("stock") || textToSubmit.includes("crypto") || textToSubmit.includes("gold") || textToSubmit.includes("growth") || textToSubmit.includes("opportunity") || textToSubmit.includes("market")
       const triggerSave = textToSubmit.includes("save") || textToSubmit.includes("goal") || textToSubmit.includes("fund") || textToSubmit.includes("laptop") || textToSubmit.includes("emergency")
@@ -67,11 +112,58 @@ export function Coach() {
       }
 
       if (triggerSave) {
-        responses.push({
-          role: 'assistant',
-          agent: 'Savings Sentinel',
-          content: `Analyzing your goals... I see you're saving for a Laptop. If you maintain your current pace, you'll reach your RM 2,500 target in approximately 4 months.`
-        })
+        if (user.currentBalance > 1000) {
+          responses.push({
+            role: 'assistant',
+            agent: 'Savings Sentinel',
+            content: `You have a healthy surplus (RM ${user.currentBalance.toFixed(2)}). I've prepared a proposal for your Laptop goal. Shall we execute it?`,
+            proposal: {
+              name: 'Laptop Fund',
+              target: 2500,
+              current: 200,
+              icon: '💻',
+              mode: 'growth',
+              riskLevel: 'medium'
+            },
+            actions: [
+              {
+                id: 'create_laptop_pocket',
+                label: 'Approve',
+                type: 'create_pocket',
+                payload: { name: 'Laptop Fund', target: 2500, current: 200, icon: '💻', mode: 'growth', riskLevel: 'medium' }
+              },
+              {
+                id: 'postpone',
+                label: 'Decline',
+                type: 'postpone'
+              }
+            ]
+          })
+        } else if (user.currentBalance < 500 || resilienceScore < 60) {
+          responses.push({
+            role: 'assistant',
+            agent: 'Savings Sentinel',
+            content: `Your current liquidity is tight (RM ${user.currentBalance.toFixed(2)}). I recommend focusing on your safety net first.`,
+            actions: [
+              {
+                id: 'prioritize_emergency',
+                label: '🛡️ Prioritize Emergency Fund instead',
+                type: 'prioritize_emergency'
+              },
+              {
+                id: 'postpone',
+                label: '🕒 Remind me later',
+                type: 'postpone'
+              }
+            ]
+          })
+        } else {
+          responses.push({
+            role: 'assistant',
+            agent: 'Savings Sentinel',
+            content: `Analyzing your goals... I see you're saving for a Laptop. If you maintain your current pace, you'll reach your RM 2,500 target in approximately 4 months.`
+          })
+        }
       }
 
       if (triggerDebt) {
@@ -89,7 +181,7 @@ export function Coach() {
           content: `The best growth opportunity right now is your ASB or high-yield savings account. Market volatility in crypto makes it a high-risk move for your current resilience level.`
         })
       }
-      
+
       setMessages([...newMessages, ...responses])
       setIsThinking(false)
     }, 1500)
@@ -108,7 +200,7 @@ export function Coach() {
       <header className="p-4 bg-background/80 backdrop-blur-md border-b border-border shadow-sm z-20 shrink-0">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Link 
+            <Link
               href="/dashboard"
               className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
             >
@@ -135,10 +227,10 @@ export function Coach() {
       <div className="flex-1 overflow-hidden relative flex flex-col">
         <ScrollArea ref={scrollRef} className="flex-1 px-4">
           <div className="space-y-6 py-6 h-full">
-            
+
             <AnimatePresence mode="wait">
               {messages.length === 0 ? (
-                <motion.div 
+                <motion.div
                   key="empty-state"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -149,7 +241,7 @@ export function Coach() {
                     <h2 className="text-xl font-medium text-muted-foreground mb-1">Hi {user.name}</h2>
                     <h1 className="text-3xl font-bold tracking-tight">Where should we start?</h1>
                   </div>
-                  
+
                   <div className="space-y-3">
                     {starterPrompts.map((prompt, i) => (
                       <motion.button
@@ -171,7 +263,7 @@ export function Coach() {
                   </div>
                 </motion.div>
               ) : (
-                <motion.div 
+                <motion.div
                   key="chat-history"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -206,17 +298,91 @@ export function Coach() {
                               agent ? <agent.icon className={cn("w-4 h-4", agent.color)} /> : <Pet animation="idle" size={32} />
                             ) : <User className="w-4 h-4" />}
                           </div>
-                          <div className={cn(
-                            "p-3 rounded-2xl text-[11px] leading-relaxed max-w-[85%] shadow-sm",
-                            m.role === 'assistant' ? "bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5" : "bg-primary text-white font-medium"
-                          )}>
-                            {m.content}
+                          <div className={cn("flex flex-col gap-3 max-w-[90%]", m.role === 'user' ? "items-end" : "items-start")}>
+                            <div className={cn(
+                              "p-3 rounded-2xl text-[11px] leading-relaxed shadow-sm w-fit",
+                              m.role === 'assistant' ? "bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5" : "bg-primary text-white font-medium"
+                            )}>
+                              {m.content}
+                            </div>
+
+                            {/* Proposal Card Rendering */}
+                            {m.proposal && (
+                              <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="w-full max-w-[280px]"
+                              >
+                                <Card className="glass-card bg-slate-900/40 border-primary/20 overflow-hidden">
+                                  <CardContent className="p-4 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-xl">
+                                        {m.proposal.icon}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <p className="text-xs font-bold text-white">{m.proposal.name}</p>
+                                          {m.proposal.mode === 'growth' && (
+                                            <Badge className="text-[7px] h-3 bg-primary/20 text-primary border-primary/20 px-1 font-black">
+                                              Managed
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center justify-between mt-0.5">
+                                          <p className="text-[9px] text-muted-foreground">RM {m.proposal.current} / RM {m.proposal.target}</p>
+                                          <span className="text-[9px] text-emerald-500 font-bold">+4.2% p.a.</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="space-y-1.5">
+                                      <div className="flex justify-between items-center text-[9px]">
+                                        <span className="text-primary/80 font-bold capitalize">({m.proposal.riskLevel} Risk)</span>
+                                        <span className="font-bold text-primary">{Math.round((m.proposal.current / m.proposal.target) * 100)}%</span>
+                                      </div>
+                                      <div className="h-1 w-full bg-primary/10 rounded-full overflow-hidden">
+                                        <div 
+                                          className="h-full bg-primary" 
+                                          style={{ width: `${(m.proposal.current / m.proposal.target) * 100}%` }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                      <span className="text-[8px] text-emerald-500 font-bold flex items-center gap-1">
+                                        <TrendingUp className="w-2 h-2" /> Growth Enabled
+                                      </span>
+                                      <span className="text-[8px] text-primary font-bold uppercase tracking-wider">Proposal Preview</span>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </motion.div>
+                            )}
+
+                            {m.actions && m.actions.length > 0 && (
+                              <div className="flex gap-2 mt-1 w-full max-w-[280px]">
+                                {m.actions.map((action: ChatAction) => (
+                                  <button
+                                    key={action.id}
+                                    onClick={() => handleAction(action)}
+                                    className={cn(
+                                      "flex-1 text-[10px] font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95 text-center",
+                                      action.type === 'create_pocket' 
+                                        ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20" 
+                                        : "bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20"
+                                    )}
+                                  >
+                                    {action.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </motion.div>
                     )
                   })}
-                  
+
                   {isThinking && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-2">
                       <div className="flex gap-3">
@@ -242,7 +408,7 @@ export function Coach() {
         <div className="bg-background/80 backdrop-blur-xl border-t border-border/50 p-4 space-y-3 shrink-0 z-20">
           <AnimatePresence>
             {messages.length > 0 && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
@@ -264,18 +430,18 @@ export function Coach() {
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           <div className="relative group">
-            <Input 
-              placeholder={isThinking ? "Wait for the council..." : strings.coachInputPlaceholder} 
+            <Input
+              placeholder={isThinking ? "Wait for the council..." : strings.coachInputPlaceholder}
               disabled={isThinking}
               className="pr-12 bg-white dark:bg-zinc-900/50 border-slate-200 dark:border-white/10 h-12 rounded-2xl text-xs shadow-sm focus:ring-primary/20 disabled:bg-slate-50 dark:disabled:bg-white/5"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
             />
-            <Button 
-              size="icon" 
+            <Button
+              size="icon"
               disabled={isThinking || !input.trim()}
               className="absolute right-1 top-1 w-10 h-10 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 transition-all active:scale-95 disabled:grayscale disabled:opacity-50"
               onClick={() => sendMessage()}

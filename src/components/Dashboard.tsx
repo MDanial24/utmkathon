@@ -15,15 +15,16 @@ import Link from "next/link"
 import { t } from "@/lib/translations"
 
 export function Dashboard() {
-  const { 
-    user, 
-    resilienceScore, 
-    safeDailySpend, 
-    cashflowRisk, 
-    debtRiskScore, 
-    language, 
+  const {
+    user,
+    resilienceScore,
+    safeDailySpend,
+    cashflowRisk,
+    debtRiskScore,
+    language,
     processAutoSave,
-    isSpendGuardActive 
+    simulateGrowth,
+    isSpendGuardActive
   } = useStore()
   const [showGuardModal, setShowGuardModal] = useState(false)
   const [showResilienceModal, setShowResilienceModal] = useState(false)
@@ -35,9 +36,11 @@ export function Dashboard() {
   useEffect(() => {
     setHasHydrated(true)
     processAutoSave()
+    simulateGrowth()
   }, [])
 
   if (!hasHydrated) return null;
+
 
   return (
     <div className="p-4 space-y-6 pb-24 max-w-lg mx-auto">
@@ -51,7 +54,7 @@ export function Dashboard() {
           <Link href="/settings" className="p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 hover:text-primary transition-colors">
             <SettingsIcon className="w-5 h-5" />
           </Link>
-          <motion.button 
+          <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowResilienceModal(true)}
             className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xs relative overflow-hidden group shadow-sm shadow-primary/20 hover:bg-primary/20 transition-colors"
@@ -99,6 +102,7 @@ export function Dashboard() {
           </Card>
         </motion.div>
       </div>
+      
 
       {/* Quick Actions */}
       <div className="grid grid-cols-4 gap-2">
@@ -167,9 +171,9 @@ export function Dashboard() {
       {/* Quick Insights */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold px-1">{strings.sectionInsights}</h3>
-        
+
         {isSpendGuardActive ? (
-          <motion.div 
+          <motion.div
             className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex gap-3 items-start cursor-pointer"
             whileHover={{ scale: 1.02 }}
             onClick={() => setShowGuardModal(true)}
@@ -182,14 +186,14 @@ export function Dashboard() {
                 {language === 'ms' ? 'Pengawal Bajet Aktif' : 'Spend Guard Active'}
               </p>
               <p className="text-[11px] text-emerald-800/80">
-                {language === 'ms' 
-                  ? 'Kewangan anda dilindungi. Had harian dikurangkan untuk mengelakkan risiko.' 
+                {language === 'ms'
+                  ? 'Kewangan anda dilindungi. Had harian dikurangkan untuk mengelakkan risiko.'
                   : 'Your finances are protected. Daily spending limit reduced to avoid cashflow risk.'}
               </p>
             </div>
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start cursor-pointer"
             whileHover={{ scale: 1.02 }}
             onClick={() => setShowGuardModal(true)}
@@ -204,7 +208,7 @@ export function Dashboard() {
           </motion.div>
         )}
 
-        <motion.div 
+        <motion.div
           className="p-3 rounded-2xl bg-primary/10 border border-primary/20 flex gap-3 items-start"
           whileHover={{ scale: 1.02 }}
         >
@@ -218,7 +222,7 @@ export function Dashboard() {
 
         </motion.div>
       </div>
-      
+
       {/* Mini Transactions */}
       <div className="space-y-3">
         <div className="flex justify-between items-center px-1">
@@ -248,9 +252,9 @@ export function Dashboard() {
         </Card>
       </div>
 
-      <SpendGuardModal 
-        isOpen={showGuardModal} 
-        onClose={() => setShowGuardModal(false)} 
+      <SpendGuardModal
+        isOpen={showGuardModal}
+        onClose={() => setShowGuardModal(false)}
       />
 
       <ResilienceModal
