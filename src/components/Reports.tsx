@@ -37,6 +37,15 @@ const marketData = [
 
 export function Reports() {
   const { resilienceScore, language, debtRiskScore } = useStore()
+  const bills = useStore(state => state.bills)
+  
+  const lockedAmount = bills
+    .filter(b => b.isLocked && b.status !== 'paid')
+    .reduce((sum, b) => sum + b.amount, 0);
+  const paidCount = bills.filter(b => b.status === 'paid').length;
+  const nextBill = bills.filter(b => b.status !== 'paid')
+    .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime())[0];
+  
   const strings = t[language]
 
   return (
@@ -211,7 +220,19 @@ export function Reports() {
           </div>
           <div className="text-right space-y-1">
             <p className="text-[10px] text-emerald-500 font-bold uppercase">+ RM 20.00</p>
-            <p className="text-[9px] text-muted-foreground italic">{strings.reportProjDesc}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {strings.billsProtected}: <span className="font-bold text-primary">RM {lockedAmount.toFixed(2)}</span>
+            </p>
+            {paidCount > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {strings.billsPaid}: <span className="font-bold text-emerald-500">{paidCount}</span>
+              </p>
+            )}
+            {nextBill && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {strings.billsNext}: <span className="font-bold">{nextBill.name}</span>
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

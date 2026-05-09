@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
-import { TrendingUp, AlertTriangle, ShieldCheck, Wallet, Calendar, Settings as SettingsIcon, QrCode, Send, History } from "lucide-react"
+import { TrendingUp, AlertTriangle, ShieldCheck, Wallet, Calendar, Settings as SettingsIcon, QrCode, Send, History, CalendarClock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { SpendGuardModal } from "./BudgetGuardModal"
@@ -26,6 +26,12 @@ export function Dashboard() {
     simulateGrowth,
     isSpendGuardActive
   } = useStore()
+  const bills = useStore(state => state.bills)
+  
+  const lockedAmount = bills
+    .filter(b => b.isLocked && b.status !== 'paid')
+    .reduce((sum, b) => sum + b.amount, 0);
+  const spendableBalance = user.currentBalance - lockedAmount;
   const [showGuardModal, setShowGuardModal] = useState(false)
   const [showResilienceModal, setShowResilienceModal] = useState(false)
   const [showTopUpModal, setShowTopUpModal] = useState(false)
@@ -105,20 +111,22 @@ export function Dashboard() {
       
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-1">
         {[
           { icon: History, label: strings.actionTransaction, href: "/transactions", color: "text-indigo-500", bg: "bg-indigo-500/10" },
           { icon: Send, label: strings.actionTransfer, href: "/transfer", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          { icon: CalendarClock, label: strings.navCards, href: "/bills", color: "text-purple-500", bg: "bg-purple-500/10", isBills: true },
           { icon: Wallet, label: strings.actionTopUp, href: "#", color: "text-emerald-500", bg: "bg-emerald-500/10" },
           { icon: ShieldCheck, label: strings.actionShield, href: "/debt-shield", color: "text-primary", bg: "bg-primary/10" },
         ].map((action) => {
           const isTopUp = action.label === strings.actionTopUp;
+          const label = action.isBills ? strings.billsHeader.split(' ')[0] : action.label;
           const content = (
             <div className="flex flex-col items-center gap-2 group cursor-pointer">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${action.bg} ${action.color} group-hover:scale-105 transition-transform`}>
                 <action.icon className="w-6 h-6" />
               </div>
-              <span className="text-[10px] font-bold text-slate-600">{action.label}</span>
+              <span className="text-[10px] font-bold text-slate-600 truncate w-full text-center">{label}</span>
             </div>
           );
 
@@ -172,6 +180,25 @@ export function Dashboard() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold px-1">{strings.sectionInsights}</h3>
 
+        {lockedAmount > 0 && (
+          <motion.div 
+            className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex gap-3 items-start cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+            onClick={() => window.location.href = '/bills'}
+          >
+            <div className="p-2 rounded-xl bg-purple-500/20 text-purple-500">
+              <CalendarClock className="w-4 h-4" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-purple-600">
+                {strings.billsProtected}: RM {lockedAmount.toFixed(2)}
+              </p>
+              <p className="text-[11px] text-purple-800/80">
+                RM {spendableBalance.toFixed(2)} {strings.billsSafe}
+              </p>
+            </div>
+          </motion.div>
+        )}
         {isSpendGuardActive ? (
           <motion.div
             className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex gap-3 items-start cursor-pointer"
