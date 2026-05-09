@@ -44,6 +44,17 @@ interface ResilienceState {
     emergencyFundGoal: number;
     currentEmergencyFund: number;
     spendingPersonality: string;
+    incomeSource?: string;
+    fixedFrequency?: string;
+    setupDate?: string;
+    durationDays?: number;
+    lumpStartDate?: string;
+    weeklyPayDay?: string;
+    lumpDuration?: number;
+    lumpDurationUnit?: string;
+    runwayDuration?: number;
+    runwayDurationUnit?: string;
+    totalCommitments?: number;
   };
   transactions: Transaction[];
   savingsPockets: SavingsPocket[];

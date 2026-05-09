@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+// import { Inter } from "next/font/google";
 import "./globals.css";
 // Deploy Trigger: 2026-05-06 - Final Fix
 import { Navbar } from "@/components/layout/Navbar";
@@ -8,7 +8,7 @@ import { SplashScreen } from "@/components/layout/SplashScreen";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GlobalBackground } from "@/components/layout/GlobalBackground";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = { className: "font-sans" };
 
 
 export const metadata: Metadata = {
