@@ -7,17 +7,26 @@ import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
 import { TrendingUp, AlertTriangle, ShieldCheck, Wallet, Calendar, Settings as SettingsIcon, QrCode, Send, History } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { SpendGuardModal } from "./BudgetGuardModal"
 import { ResilienceModal } from "./ResilienceModal"
 import Link from "next/link"
 import { t } from "@/lib/translations"
 
 export function Dashboard() {
-  const { user, resilienceScore, safeDailySpend, cashflowRisk, debtRiskScore, language } = useStore()
+  const { user, resilienceScore, safeDailySpend, cashflowRisk, debtRiskScore, language, processAutoSave } = useStore()
   const [showGuardModal, setShowGuardModal] = useState(false)
   const [showResilienceModal, setShowResilienceModal] = useState(false)
   const strings = t[language]
+
+  // Hydration guard for Next.js persisted state
+  const [hasHydrated, setHasHydrated] = useState(false)
+  useEffect(() => {
+    setHasHydrated(true)
+    processAutoSave()
+  }, [])
+
+  if (!hasHydrated) return null;
 
   return (
     <div className="p-4 space-y-6 pb-24 max-w-lg mx-auto">

@@ -48,7 +48,7 @@ export function CoachFAB() {
         dragTransition={{ power: 0.2, timeConstant: 200 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-24 right-4 z-[100] cursor-grab active:cursor-grabbing flex items-center pointer-events-auto"
+        className="fixed bottom-24 right-4 z-40 cursor-grab active:cursor-grabbing flex items-center pointer-events-auto"
       >
         <div className="relative">
           {/* Chat Bubble */}

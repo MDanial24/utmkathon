@@ -108,6 +108,19 @@ type Translations = {
     saveSmartAuto: string
     saveSmartDesc: string
     saveAddFunds: string
+    saveAddPocket: string
+    saveGoalName: string
+    saveTargetAmount: string
+    saveInitialDeposit: string
+    saveChooseIcon: string
+    saveAddFundsTo: string
+    saveAmountToSave: string
+    saveConfirmDeposit: string
+    saveEditPocket: string
+    saveDeletePocket: string
+    saveDeleteConfirm: string
+    saveDeleteNotice: string
+    saveUpdatePocket: string
 
     // Reports Page
     reportHeader: string
@@ -229,9 +242,31 @@ export const t: Translations = {
     savePocketRent: "Rent Buffer",
     saveGoalMet: "Goal Met",
     saveCreatePocket: "Create New Pocket",
+    saveSplitSummary: "Saving will be split between {count} pockets (RM {amount} each)",
+    saveMode: "Management Mode",
+    saveModeSavings: "Safe Savings",
+    saveModeGrowth: "Growth Portfolio",
+    saveRiskLevel: "Risk Profile",
+    saveRiskLow: "Low (Stable)",
+    saveRiskMed: "Medium (Balanced)",
+    saveRiskHigh: "High (Growth)",
+    saveInvestedBadge: "Managed",
     saveSmartAuto: "Smart Auto-Save",
     saveSmartDesc: "Moving RM 2.00 daily to Emergency Fund",
     saveAddFunds: "ADD FUNDS",
+    saveAddPocket: "New Savings Goal",
+    saveGoalName: "Goal Name",
+    saveTargetAmount: "Target Amount (RM)",
+    saveInitialDeposit: "Initial Deposit (RM)",
+    saveChooseIcon: "Choose Icon",
+    saveAddFundsTo: "Add Funds to",
+    saveAmountToSave: "Amount to Save (RM)",
+    saveConfirmDeposit: "Confirm Deposit",
+    saveEditPocket: "Edit Pocket",
+    saveDeletePocket: "Delete Pocket",
+    saveDeleteConfirm: "Are you sure?",
+    saveDeleteNotice: "The balance in this pocket will be returned to your main account.",
+    saveUpdatePocket: "Update Pocket",
 
     // Reports Page
     reportHeader: "Reports & Insights",
@@ -350,9 +385,31 @@ export const t: Translations = {
     savePocketRent: "Penampan Sewa",
     saveGoalMet: "Matlamat Tercapai",
     saveCreatePocket: "Cipta Poket Baharu",
+    saveSplitSummary: "Simpanan akan dibahagikan antara {count} poket (RM {amount} setiap satu)",
+    saveMode: "Mod Pengurusan",
+    saveModeSavings: "Simpanan Selamat",
+    saveModeGrowth: "Portfolio Pertumbuhan",
+    saveRiskLevel: "Profil Risiko",
+    saveRiskLow: "Rendah (Stabil)",
+    saveRiskMed: "Sederhana (Seimbang)",
+    saveRiskHigh: "Tinggi (Pertumbuhan)",
+    saveInvestedBadge: "Diuruskan",
     saveSmartAuto: "Simpanan Automatik Pintar",
     saveSmartDesc: "Memindahkan RM 2.00 setiap hari ke Dana Kecemasan",
     saveAddFunds: "TAMBAH DANA",
+    saveAddPocket: "Matlamat Simpanan Baru",
+    saveGoalName: "Nama Matlamat",
+    saveTargetAmount: "Jumlah Sasaran (RM)",
+    saveInitialDeposit: "Deposit Permulaan (RM)",
+    saveChooseIcon: "Pilih Ikon",
+    saveAddFundsTo: "Tambah Dana ke",
+    saveAmountToSave: "Jumlah Simpanan (RM)",
+    saveConfirmDeposit: "Sahkan Deposit",
+    saveEditPocket: "Edit Poket",
+    saveDeletePocket: "Padam Poket",
+    saveDeleteConfirm: "Adakah anda pasti?",
+    saveDeleteNotice: "Baki dalam poket ini akan dikembalikan ke akaun utama anda.",
+    saveUpdatePocket: "Kemaskini Poket",
 
     // Reports Page
     reportHeader: "Laporan & Maklumat",
