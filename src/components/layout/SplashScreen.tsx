@@ -37,7 +37,7 @@ export function SplashScreen() {
             </div>
             
             <h1 className="text-3xl font-black text-white tracking-tight text-glow">
-              Resilience
+              GX Youth
             </h1>
             <p className="text-white/60 text-sm font-medium tracking-widest uppercase mt-2">
               Agent
