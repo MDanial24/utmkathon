@@ -45,6 +45,120 @@ export function Dashboard() {
     simulateGrowth()
   }, [])
 
+  const getDaysRemaining = () => {
+    if (user.incomeSource === "fixed" && user.fixedFrequency === "weekly" && user.weeklyPayDay) {
+      const daysMap: Record<string, number> = {
+        sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+      };
+      const targetIndex = daysMap[user.weeklyPayDay.toLowerCase()] ?? 5;
+      const today = new Date();
+      const todayIndex = today.getDay();
+      let diff = targetIndex - todayIndex;
+      if (diff <= 0) {
+        diff += 7;
+      }
+      return diff;
+    }
+
+    if (!user.nextAllowanceDate) return 14;
+    const today = new Date();
+    const nextDate = new Date(user.nextAllowanceDate);
+    const diffTime = nextDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 30;
+  }
+
+  const getDynamicSafeDaily = () => {
+    const balance = user.currentBalance || 0
+    if (balance <= 0) return 0.0
+
+    // Fallback if onboarding properties are missing
+    if (!user.incomeSource) return safeDailySpend > 0 ? safeDailySpend : 15.0
+
+    const totalCommitments = user.totalCommitments || 0
+    let calculatedDaily = 15.0
+
+    if (user.incomeSource === "fixed") {
+      const daysLeft = getDaysRemaining()
+      
+      if (user.fixedFrequency === "weekly") {
+        // Divide monthly commitments to 4 weeks (simplified weekly commitment)
+        const weeklyCommitment = totalCommitments / 4
+        const remainingBalance = Math.max(0, balance - weeklyCommitment)
+        calculatedDaily = daysLeft > 0 ? remainingBalance / daysLeft : remainingBalance
+      } else {
+        // Monthly plan: deduct full monthly commitments from the remaining month balance
+        const remainingBalance = Math.max(0, balance - totalCommitments)
+        calculatedDaily = daysLeft > 0 ? remainingBalance / daysLeft : remainingBalance
+      }
+    } else if (user.incomeSource === "lump-sum") {
+      const start = user.lumpStartDate ? new Date(user.lumpStartDate) : (user.setupDate ? new Date(user.setupDate) : new Date())
+      const duration = user.durationDays || 30
+      const end = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000)
+      
+      const today = new Date()
+      const diffTime = end.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      const remainingDays = diffDays > 0 ? diffDays : duration
+      
+      // Calculate commitments for the remaining period
+      const remainingMonths = remainingDays / 30
+      const commitmentsForRemainingPeriod = totalCommitments * remainingMonths
+      const remainingBalance = Math.max(0, balance - commitmentsForRemainingPeriod)
+      
+      calculatedDaily = remainingBalance / remainingDays
+    } else {
+      // irregular / none
+      const start = user.setupDate ? new Date(user.setupDate) : new Date()
+      const duration = user.durationDays || 30
+      const end = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000)
+      
+      const today = new Date()
+      const diffTime = end.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      const remainingDays = diffDays > 0 ? diffDays : duration
+      
+      // Calculate commitments for the remaining period
+      const remainingMonths = remainingDays / 30
+      const commitmentsForRemainingPeriod = totalCommitments * remainingMonths
+      const remainingBalance = Math.max(0, balance - commitmentsForRemainingPeriod)
+      
+      calculatedDaily = remainingBalance / remainingDays
+    }
+
+    const flooredDaily = Math.floor(calculatedDaily * 100) / 100
+    return flooredDaily > 0 ? flooredDaily : 15.0
+  }
+
+  const getPlanTitle = () => {
+    if (!user.incomeSource) return "Safe Daily"
+
+    let planName = "Monthly Plan"
+
+    if (user.incomeSource === "fixed") {
+      if (user.fixedFrequency === "weekly") {
+        planName = "Weekly Plan"
+      } else {
+        planName = "Monthly Plan"
+      }
+    } else if (user.incomeSource === "lump-sum") {
+      const dur = user.lumpDuration || 6
+      const unit = user.lumpDurationUnit || "month"
+      const capitalizedUnit = unit.charAt(0).toUpperCase() + unit.slice(1)
+      const pluralSuffix = dur > 1 ? "s" : ""
+      planName = `${dur} ${capitalizedUnit}${pluralSuffix} Plan`
+    } else {
+      // irregular / none
+      const dur = user.runwayDuration || 3
+      const unit = user.runwayDurationUnit || "month"
+      const capitalizedUnit = unit.charAt(0).toUpperCase() + unit.slice(1)
+      const pluralSuffix = dur > 1 ? "s" : ""
+      planName = `${dur} ${capitalizedUnit}${pluralSuffix} Plan`
+    }
+
+    return `Safe Daily (${planName})`
+  }
+
   if (!hasHydrated) return null;
 
 
@@ -85,7 +199,7 @@ export function Dashboard() {
             </CardHeader>
             <CardContent className="p-4">
               <p className="text-xl font-bold">RM {user.currentBalance.toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground">{strings.dashNextIn} 14 {strings.dashDays}</p>
+              <p className="text-[10px] text-muted-foreground">{strings.dashNextIn} {getDaysRemaining()} {strings.dashDays}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -98,11 +212,11 @@ export function Dashboard() {
           <Card className="glass-card border-primary/20">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-xs text-primary flex items-center gap-2">
-                <ShieldCheck className="w-3 h-3" /> {strings.dashSafeDaily}
+                <ShieldCheck className="w-3 h-3" /> {getPlanTitle()}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <p className="text-xl font-bold text-primary text-glow">RM {safeDailySpend.toFixed(2)}</p>
+              <p className="text-xl font-bold text-primary text-glow">RM {getDynamicSafeDaily().toFixed(2)}</p>
               <p className="text-[10px] text-muted-foreground">{strings.dashLimitsImpulse}</p>
             </CardContent>
           </Card>

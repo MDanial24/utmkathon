@@ -58,6 +58,7 @@ export default function SetupPage() {
   const [fixedAmount, setFixedAmount] = useState(800)
   const [fixedFrequency, setFixedFrequency] = useState<"monthly" | "weekly">("monthly")
   const [fixedNextDate, setFixedNextDate] = useState(getFirstDayOfNextMonth())
+  const [weeklyPayDay, setWeeklyPayDay] = useState("Friday")
 
   // Step 3: Scenario B - Lump Sum State
   const [lumpAmount, setLumpAmount] = useState(5000)
@@ -111,11 +112,33 @@ export default function SetupPage() {
     } else {
       // Step 5: Save to Zustand store & redirect to dashboard
       // Determine logical next allowance/payday reset date
-      let finalResetDate = getFirstDayOfNextMonth()
+      const getUpcomingDayDate = (dayName: string) => {
+        const daysMap: Record<string, number> = {
+          sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+        };
+        const targetIndex = daysMap[dayName.toLowerCase()] ?? 5;
+        const today = new Date();
+        const todayIndex = today.getDay();
+        let diff = targetIndex - todayIndex;
+        if (diff <= 0) {
+          diff += 7;
+        }
+        const targetDate = new Date(today.getTime() + diff * 24 * 60 * 60 * 1000);
+        const yyyy = targetDate.getFullYear();
+        const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(targetDate.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      };
+
+      let finalResetDate = getFirstDayOfNextMonth();
       if (incomeSource === "fixed") {
-        finalResetDate = fixedNextDate
+        if (fixedFrequency === "weekly") {
+          finalResetDate = getUpcomingDayDate(weeklyPayDay);
+        } else {
+          finalResetDate = fixedNextDate;
+        }
       } else if (incomeSource === "lump-sum") {
-        finalResetDate = lumpStartDate
+        finalResetDate = lumpStartDate;
       }
 
       // Calculate commitments
@@ -155,6 +178,16 @@ export default function SetupPage() {
       const netFunds = Math.max(0, totalAmount - totalCommitmentsForPeriod)
       const calculatedDailySafe = Number((netFunds / durationDays).toFixed(2))
 
+      // Determine the starting balance dynamically to reflect setup details on the dashboard
+      let startBalance = 800
+      if (incomeSource === "fixed") {
+        startBalance = fixedAmount
+      } else if (incomeSource === "lump-sum") {
+        startBalance = lumpAmount
+      } else {
+        startBalance = savingsAmount
+      }
+
       // Create initial bills from onboarding commitments
       const initialBills = [
         { id: 'b1', name: 'Rent / Hostel', amount: rent, category: 'Housing', icon: '🏠' },
@@ -183,7 +216,19 @@ export default function SetupPage() {
           name: name,
           type: employmentStatus,
           monthlyAllowance: Math.round(incomeSource === "fixed" ? totalAmount : (totalAmount / periodMonths)),
+          currentBalance: startBalance,
           nextAllowanceDate: new Date(finalResetDate).toISOString(),
+          incomeSource: incomeSource,
+          fixedFrequency: fixedFrequency,
+          setupDate: new Date().toISOString(),
+          durationDays: durationDays,
+          lumpStartDate: lumpStartDate,
+          weeklyPayDay: weeklyPayDay,
+          lumpDuration: lumpDuration,
+          lumpDurationUnit: lumpDurationUnit,
+          runwayDuration: runwayDuration,
+          runwayDurationUnit: runwayDurationUnit,
+          totalCommitments: totalCommitments,
         },
         bills: initialBills as any[],
         safeDailySpend: calculatedDailySafe > 0 ? calculatedDailySafe : 15.0,
@@ -416,22 +461,48 @@ export default function SetupPage() {
                         </div>
                       </div>
 
-                      {/* Input 3: Next Allowance Date */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Next Allowance/Payday Date</label>
-                        <input
-                          type="date"
-                          value={fixedNextDate}
-                          onChange={(e) => setFixedNextDate(e.target.value)}
-                          className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 text-sm"
-                        />
+                      {/* Input 3: Next Allowance Date / Pay Day Selector */}
+                      <div className="space-y-1.5 animate-fade-in">
+                        {fixedFrequency === "weekly" ? (
+                          <>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pay Day</label>
+                            <div className="relative">
+                              <select
+                                value={weeklyPayDay}
+                                onChange={(e) => setWeeklyPayDay(e.target.value)}
+                                className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 text-sm appearance-none cursor-pointer"
+                              >
+                                {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
+                                  <option key={day} value={day}>{day}</option>
+                                ))}
+                              </select>
+                              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Next Allowance/Payday Date</label>
+                            <input
+                              type="date"
+                              value={fixedNextDate}
+                              onChange={(e) => setFixedNextDate(e.target.value)}
+                              className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-[rgb(147,51,234)] outline-none font-bold text-slate-800 text-sm"
+                            />
+                          </>
+                        )}
                       </div>
 
                       {/* Insight Note */}
                       <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 flex gap-2.5 items-start">
                         <Info className="w-4 h-4 text-[rgb(147,51,234)] mt-0.5 flex-shrink-0" />
                         <p className="text-[11px] text-slate-600 font-semibold leading-relaxed">
-                          We'll automatically reset your budget on the 1st of every month.
+                          {fixedFrequency === "weekly" 
+                            ? `We'll automatically reset your budget every week on ${weeklyPayDay}.`
+                            : "We'll automatically reset your budget on the 1st of every month."}
                         </p>
                       </div>
                     </div>
