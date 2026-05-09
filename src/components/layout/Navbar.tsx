@@ -14,7 +14,7 @@ export function Navbar() {
   const { language } = useStore()
   const strings = t[language]
 
-  if (pathname === '/') return null
+  if (pathname === '/' || pathname === '/coach') return null
 
   const leftNavItems = [
     { icon: Home, label: strings.navHome, href: "/dashboard" },

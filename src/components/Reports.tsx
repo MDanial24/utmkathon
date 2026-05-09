@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell, PieChart, Pie
+  PieChart, Pie, Cell
 } from 'recharts'
-import { TrendingUp, Award, Calendar, ChevronRight } from "lucide-react"
+import { TrendingUp, Award, Calendar, Target, Shield, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { t } from "@/lib/translations"
+import { Progress } from "@/components/ui/progress"
+import { cn } from "@/lib/utils"
 
 const spendingData = [
   { name: 'Mon', amount: 45 },
@@ -27,8 +29,14 @@ const categoryData = [
   { name: 'Sub', value: 80, color: '#f87171' },
 ]
 
+const marketData = [
+  { label: 'Stock Portfolio', value: '+4.2%', trend: 'up', color: 'text-emerald-500' },
+  { label: 'Crypto Assets', value: '-1.8%', trend: 'down', color: 'text-rose-500' },
+  { label: 'Gold Savings', value: '+0.5%', trend: 'up', color: 'text-emerald-500' },
+]
+
 export function Reports() {
-  const { resilienceScore, language } = useStore()
+  const { resilienceScore, language, debtRiskScore } = useStore()
   const strings = t[language]
 
   return (
@@ -37,6 +45,40 @@ export function Reports() {
         <h1 className="text-2xl font-bold">{strings.reportHeader}</h1>
         <p className="text-muted-foreground text-sm">{strings.reportSubheader}</p>
       </header>
+
+      {/* Health Metrics Insights - MOVED FROM COACH */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="glass-card border-emerald-500/20">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <Target className="w-4 h-4 text-emerald-500" />
+              <Badge className="text-[8px] bg-emerald-500/10 text-emerald-500 border-none">+12%</Badge>
+            </div>
+            <p className="text-[10px] font-bold">Savings Rate</p>
+            <div className="h-8 flex items-end gap-1">
+              {[40, 60, 30, 80, 50, 70, 90].map((h, i) => (
+                <div key={i} className="flex-1 bg-emerald-500/20 rounded-t-sm" style={{ height: `${h}%` }} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="glass-card border-purple-500/20">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <Shield className="w-4 h-4 text-purple-500" />
+              <Badge className="text-[8px] bg-purple-500/10 text-purple-500 border-none">Healthy</Badge>
+            </div>
+            <p className="text-[10px] font-bold">Debt Health</p>
+            <div className="space-y-1.5 pt-2">
+              <div className="flex justify-between text-[8px] font-bold">
+                <span>Score</span>
+                <span>{debtRiskScore}/100</span>
+              </div>
+              <Progress value={debtRiskScore} className="h-1 bg-purple-500/10" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Resilience Trend */}
       <Card className="glass-card overflow-hidden">
@@ -67,6 +109,32 @@ export function Reports() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Market Insights - MOVED FROM COACH */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold px-1">Market Insights</h3>
+        <Card className="glass-card overflow-hidden">
+          <CardContent className="p-0">
+            {marketData.map((item, i) => (
+              <div key={item.label} className={cn(
+                "p-4 flex justify-between items-center",
+                i !== marketData.length - 1 && "border-b border-slate-100 dark:border-white/5"
+              )}>
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center",
+                    item.trend === 'up' ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                  )}>
+                    {item.trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                  </div>
+                  <span className="text-xs font-medium">{item.label}</span>
+                </div>
+                <span className={cn("text-xs font-bold", item.color)}>{item.value}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Achievements / Nudge History */}
       <div className="space-y-3">
@@ -100,40 +168,38 @@ export function Reports() {
       {/* Category Breakdown */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold px-1">{strings.reportBreakdown}</h3>
-        <div className="grid grid-cols-1 gap-4">
-          <Card className="glass-card p-4">
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      innerRadius={30}
-                      outerRadius={45}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex-1 space-y-2">
-                {categoryData.map((cat) => (
-                  <div key={cat.name} className="flex justify-between items-center text-[10px]">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                      <span className="text-muted-foreground">{cat.name}</span>
-                    </div>
-                    <span className="font-bold">RM {cat.value}</span>
-                  </div>
-                ))}
-              </div>
+        <Card className="glass-card p-4">
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    innerRadius={30}
+                    outerRadius={45}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-          </Card>
-        </div>
+            <div className="flex-1 space-y-2">
+              {categoryData.map((cat) => (
+                <div key={cat.name} className="flex justify-between items-center text-[10px]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                    <span className="text-muted-foreground">{cat.name}</span>
+                  </div>
+                  <span className="font-bold">RM {cat.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Projected Balance */}
