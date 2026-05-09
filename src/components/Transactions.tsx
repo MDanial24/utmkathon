@@ -40,8 +40,14 @@ export function Transactions() {
             <Card key={t.id} className="glass-card">
               <CardContent className="p-4 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-secondary flex items-center justify-center text-xl">
-                    {t.category === 'Food' ? '🍱' : t.category === 'Transport' ? '🚗' : t.category === 'Subscription' ? '📺' : '🛍️'}
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-xl">
+                    {t.type === 'income' ? '💰' : 
+                     t.category === 'Food' ? '🍱' : 
+                     t.category === 'Transport' ? '🚗' : 
+                     t.category === 'Housing' ? '🏠' : 
+                     t.category === 'Utilities' ? '📱' :
+                     t.category === 'Education' ? '🎓' :
+                     t.category === 'Entertainment' ? '📺' : '🛍️'}
                   </div>
                   <div>
                     <p className="text-xs font-bold">{t.title}</p>

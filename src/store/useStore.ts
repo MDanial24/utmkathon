@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
 import { Language } from '@/lib/translations';
+import { calculateNextDueDate, isBillDue, isAutoPaySafe } from '@/lib/billEngine';
 
 export interface Transaction {
   id: string;
@@ -31,6 +32,52 @@ export interface Agent {
   confidence: number;
   recommendedAction: string;
   tools: string[];
+}
+
+export type BillFrequency = "one-time" | "weekly" | "monthly" | "yearly";
+
+export type BillStatus =
+  | "upcoming"
+  | "paid"
+  | "missed"
+  | "paused"
+  | "needs_setup"
+  | "low_balance";
+
+export type AutoPaySafety = "strict" | "balanced" | "flexible";
+
+export interface BillPaymentRecord {
+  id: string;
+  billId: string;
+  amount: number;
+  paidAt: string;
+  method: "manual" | "autopay";
+  status: "paid" | "failed";
+  transactionId?: string;
+}
+
+export interface Bill {
+  id: string;
+  name: string;
+  category: string;
+  provider?: string;
+  accountNumber?: string;
+  referenceNumber?: string;
+  amount: number;
+  dueDay?: number;
+  dueDate?: string;
+  nextDueDate: string;
+  frequency: BillFrequency;
+  isLocked: boolean;
+  autopayEnabled: boolean;
+  autopaySafety: AutoPaySafety;
+  reminderDaysBefore: number;
+  status: BillStatus;
+  lastPaidAt?: string;
+  paymentHistory?: BillPaymentRecord[];
+  source: "onboarding" | "manual" | "detected";
+  createdAt: string;
+  updatedAt?: string;
 }
 
 interface ResilienceState {
@@ -75,7 +122,7 @@ interface ResilienceState {
   };
   lastGrowthSimulationDate: string | null;
   isRoundUpActive: boolean;
-
+  bills: Bill[];
   // Actions
   addTransaction: (t: Transaction, skipRoundUp?: boolean) => void;
   addSavingsPocket: (p: SavingsPocket) => void;
@@ -92,6 +139,15 @@ interface ResilienceState {
   simulateGrowth: () => void;
   updateResilienceScore: () => void;
   setLanguage: (lang: Language) => void;
+  
+  // Bills Actions
+  addBill: (b: Bill) => void;
+  updateBill: (id: string, updates: Partial<Bill>) => void;
+  deleteBill: (id: string) => void;
+  toggleBillLock: (id: string) => void;
+  toggleBillAutopay: (id: string) => void;
+  payBillNow: (id: string) => void;
+  processAutoPay: () => void;
 }
 
 const RISK_RETURNS = {
@@ -146,6 +202,7 @@ const initialStoreState = {
   },
   lastGrowthSimulationDate: null,
   isRoundUpActive: true,
+  bills: [],
 };
 
 // Raw store with persistence enabled
@@ -275,7 +332,118 @@ const useStoreBase = create<ResilienceState>()(
       updateResilienceScore: () => {
         // Logic to recalculate based on state
       },
-      setLanguage: (lang) => set({ language: lang })
+      setLanguage: (lang) => set({ language: lang }),
+
+      // Bills Actions
+      addBill: (b) => set((state) => ({ bills: [...state.bills, b] })),
+      updateBill: (id, updates) => set((state) => ({
+        bills: state.bills.map(b => b.id === id ? { ...b, ...updates, updatedAt: new Date().toISOString() } : b)
+      })),
+      deleteBill: (id) => set((state) => ({
+        bills: state.bills.filter(b => b.id !== id)
+      })),
+      toggleBillLock: (id) => set((state) => ({
+        bills: state.bills.map(b => b.id === id ? { ...b, isLocked: !b.isLocked } : b)
+      })),
+      toggleBillAutopay: (id) => set((state) => ({
+        bills: state.bills.map(b => b.id === id ? { ...b, autopayEnabled: !b.autopayEnabled } : b)
+      })),
+      payBillNow: (id) => {
+        const state = get();
+        const bill = state.bills.find(b => b.id === id);
+        if (!bill) return;
+
+        const transactionId = Math.random().toString(36).substring(7);
+        const paymentRecord: BillPaymentRecord = {
+          id: Math.random().toString(36).substring(7),
+          billId: id,
+          amount: bill.amount,
+          paidAt: new Date().toISOString(),
+          method: 'manual',
+          status: 'paid',
+          transactionId
+        };
+
+        state.addTransaction({
+          id: transactionId,
+          title: `Bill: ${bill.name}`,
+          amount: bill.amount,
+          category: bill.category,
+          date: new Date().toISOString(),
+          type: 'expense'
+        });
+
+        set((state) => ({
+          bills: state.bills.map(b => b.id === id ? {
+            ...b,
+            status: 'paid',
+            lastPaidAt: paymentRecord.paidAt,
+            nextDueDate: calculateNextDueDate(b.nextDueDate, b.frequency),
+            paymentHistory: [paymentRecord, ...(b.paymentHistory || [])]
+          } : b),
+          pet: { message: `Bill for ${bill.name} paid! Great job.` }
+        }));
+      },
+      processAutoPay: () => {
+        const state = get();
+        const today = new Date();
+        const nextAllowance = new Date(state.user.nextAllowanceDate);
+        const daysUntilNextAllowance = Math.max(1, Math.ceil((nextAllowance.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+        
+        // Calculate current locked amount for spendable balance logic
+        const lockedAmount = state.bills
+          .filter(b => b.isLocked && b.status !== 'paid')
+          .reduce((sum, b) => sum + b.amount, 0);
+        const spendableBalance = state.user.currentBalance - lockedAmount;
+
+        state.bills.forEach(bill => {
+          if (bill.autopayEnabled && bill.status !== 'paid' && isBillDue(bill.nextDueDate)) {
+            // Check if setup is complete
+            if (!bill.accountNumber && !bill.referenceNumber) {
+              state.updateBill(bill.id, { status: 'needs_setup' });
+              return;
+            }
+
+            const safety = isAutoPaySafe(bill, state.user.currentBalance, spendableBalance, daysUntilNextAllowance);
+            
+            if (safety.safe) {
+              const transactionId = Math.random().toString(36).substring(7);
+              const paymentRecord: BillPaymentRecord = {
+                id: Math.random().toString(36).substring(7),
+                billId: bill.id,
+                amount: bill.amount,
+                paidAt: new Date().toISOString(),
+                method: 'autopay',
+                status: 'paid',
+                transactionId
+              };
+
+              state.addTransaction({
+                id: transactionId,
+                title: `AutoPay: ${bill.name}`,
+                amount: bill.amount,
+                category: bill.category,
+                date: new Date().toISOString(),
+                type: 'expense'
+              });
+
+              set((s) => ({
+                bills: s.bills.map(b => b.id === bill.id ? {
+                  ...b,
+                  status: 'paid',
+                  lastPaidAt: paymentRecord.paidAt,
+                  nextDueDate: calculateNextDueDate(b.nextDueDate, b.frequency),
+                  paymentHistory: [paymentRecord, ...(b.paymentHistory || [])]
+                } : b),
+                pet: { message: `AutoPay: ${bill.name} RM${bill.amount} paid successfully!` }
+              }));
+            } else {
+              state.updateBill(bill.id, { status: 'paused' });
+              set({ pet: { message: `AutoPay paused for ${bill.name}: ${safety.reason}` } });
+            }
+          }
+        });
+      }
     }),
     {
       name: 'resilience-agent-storage',
@@ -317,6 +485,13 @@ export const useStore = (() => {
       simulateGrowth: storeState.simulateGrowth,
       updateResilienceScore: storeState.updateResilienceScore,
       setLanguage: storeState.setLanguage,
+      addBill: storeState.addBill,
+      updateBill: storeState.updateBill,
+      deleteBill: storeState.deleteBill,
+      toggleBillLock: storeState.toggleBillLock,
+      toggleBillAutopay: storeState.toggleBillAutopay,
+      payBillNow: storeState.payBillNow,
+      processAutoPay: storeState.processAutoPay,
     };
 
     const stateToUse = hydrated

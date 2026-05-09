@@ -188,6 +188,27 @@ export default function SetupPage() {
         startBalance = savingsAmount
       }
 
+      // Create initial bills from onboarding commitments
+      const initialBills = [
+        { id: 'b1', name: 'Rent / Hostel', amount: rent, category: 'Housing', icon: '🏠' },
+        { id: 'b2', name: 'Phone Bill', amount: phoneBill, category: 'Utilities', icon: '📱' },
+        { id: 'b3', name: 'Transport', amount: transport, category: 'Transport', icon: '🚗' },
+        { id: 'b4', name: 'PTPTN', amount: ptptn, category: 'Education', icon: '🎓' },
+        { id: 'b5', name: 'Subscriptions', amount: subscriptions, category: 'Entertainment', icon: '📺' },
+      ].filter(b => b.amount > 0).map(b => ({
+        ...b,
+        frequency: 'monthly' as const,
+        dueDay: 5, // Default to 5th of month
+        nextDueDate: getFirstDayOfNextMonth(),
+        isLocked: true,
+        autopayEnabled: false,
+        autopaySafety: 'balanced' as const,
+        reminderDaysBefore: 3,
+        status: 'upcoming' as const,
+        source: 'onboarding' as const,
+        createdAt: new Date().toISOString()
+      }));
+
       // Update Zustand store fields cleanly
       useStore.setState((state) => ({
         user: {
@@ -209,6 +230,7 @@ export default function SetupPage() {
           runwayDurationUnit: runwayDurationUnit,
           totalCommitments: totalCommitments,
         },
+        bills: initialBills as any[],
         safeDailySpend: calculatedDailySafe > 0 ? calculatedDailySafe : 15.0,
       }))
 

@@ -155,6 +155,49 @@ type Translations = {
     coachChipLimit: string
     coachChipSafe: string
     coachChipSave: string
+
+    // Bills Feature
+    billsHeader: string
+    billsSubheader: string
+    billsProtected: string
+    billsNext: string
+    billsAutoPay: string
+    billsActive: string
+    billsNeedsSetup: string
+    billsUpcoming: string
+    billsPaid: string
+    billsHistory: string
+    billsAdd: string
+    billsAutoPayCheck: string
+    billsLock: string
+    billsAutoPayToggle: string
+    billsPayNow: string
+    billsCompleteSetup: string
+    billsNoAcc: string
+    billsSafe: string
+    billsUnsafe: string
+    billsDueSoon: string
+    billsDueToday: string
+    billsOverdue: string
+    billsDaysLeft: string
+    billsEdit: string
+    billsDelete: string
+    billsSave: string
+    billsCancel: string
+    billsName: string
+    billsAmount: string
+    billsCategory: string
+    billsProvider: string
+    billsAccNum: string
+    billsRefNum: string
+    billsFreq: string
+    billsDueDay: string
+    billsSafety: string
+    billsReminder: string
+    billsStrict: string
+    billsBalanced: string
+    billsFlexible: string
+    billsSimulated: string
   }
 }
 
@@ -306,6 +349,49 @@ export const t: Translations = {
     coachChipLimit: "How to limit impulse buys?",
     coachChipSafe: "What is my safe daily spend?",
     coachChipSave: "How to save for a laptop?",
+
+    // Bills Feature
+    billsHeader: "Bills & Commitments",
+    billsSubheader: "Protect your essentials before you spend.",
+    billsProtected: "Protected",
+    billsNext: "Next Bill",
+    billsAutoPay: "AutoPay",
+    billsActive: "Active",
+    billsNeedsSetup: "Needs Setup",
+    billsUpcoming: "Upcoming Bills",
+    billsPaid: "Paid / History",
+    billsHistory: "History",
+    billsAdd: "Add Bill",
+    billsAutoPayCheck: "Run AutoPay Check",
+    billsLock: "Bill Lock",
+    billsAutoPayToggle: "AutoPay",
+    billsPayNow: "Pay Now",
+    billsCompleteSetup: "Complete Setup",
+    billsNoAcc: "Add account/reference number to enable AutoPay.",
+    billsSafe: "Safe to Pay",
+    billsUnsafe: "Low Balance Risk",
+    billsDueSoon: "Due Soon",
+    billsDueToday: "Due Today",
+    billsOverdue: "Overdue",
+    billsDaysLeft: "days left",
+    billsEdit: "Edit Bill",
+    billsDelete: "Delete",
+    billsSave: "Save Bill",
+    billsCancel: "Cancel",
+    billsName: "Bill Name",
+    billsAmount: "Amount",
+    billsCategory: "Category",
+    billsProvider: "Provider",
+    billsAccNum: "Account Number",
+    billsRefNum: "Reference Number",
+    billsFreq: "Frequency",
+    billsDueDay: "Due Day of Month",
+    billsSafety: "AutoPay Safety",
+    billsReminder: "Reminder (days before)",
+    billsStrict: "Strict",
+    billsBalanced: "Balanced",
+    billsFlexible: "Flexible",
+    billsSimulated: "Simulated AutoPay completed",
   },
   ms: {
     navHome: "Utama",
@@ -454,5 +540,48 @@ export const t: Translations = {
     coachChipLimit: "Cara elak beli ikut nafsu?",
     coachChipSafe: "Berapa bajet harian saya?",
     coachChipSave: "Cara simpan untuk komputer riba?",
+
+    // Bills Feature
+    billsHeader: "Bil & Komitmen",
+    billsSubheader: "Lindungi keperluan utama sebelum anda belanja.",
+    billsProtected: "Dilindungi",
+    billsNext: "Bil Seterusnya",
+    billsAutoPay: "AutoPay",
+    billsActive: "Aktif",
+    billsNeedsSetup: "Perlu Tetapan",
+    billsUpcoming: "Bil Akan Datang",
+    billsPaid: "Dibayar / Sejarah",
+    billsHistory: "Sejarah",
+    billsAdd: "Tambah Bil",
+    billsAutoPayCheck: "Semak AutoPay",
+    billsLock: "Kunci Bil",
+    billsAutoPayToggle: "AutoPay",
+    billsPayNow: "Bayar Sekarang",
+    billsCompleteSetup: "Lengkapkan Tetapan",
+    billsNoAcc: "Tambah no. akaun/rujukan untuk aktifkan AutoPay.",
+    billsSafe: "Selamat Dibayar",
+    billsUnsafe: "Risiko Baki Rendah",
+    billsDueSoon: "Akan Datang",
+    billsDueToday: "Hari Ini",
+    billsOverdue: "Tunggakan",
+    billsDaysLeft: "hari lagi",
+    billsEdit: "Edit Bil",
+    billsDelete: "Padam",
+    billsSave: "Simpan Bil",
+    billsCancel: "Batal",
+    billsName: "Nama Bil",
+    billsAmount: "Jumlah",
+    billsCategory: "Kategori",
+    billsProvider: "Penyedia",
+    billsAccNum: "Nombor Akaun",
+    billsRefNum: "Nombor Rujukan",
+    billsFreq: "Kekerapan",
+    billsDueDay: "Hari Bil (setiap bulan)",
+    billsSafety: "Keselamatan AutoPay",
+    billsReminder: "Peringatan (hari sebelum)",
+    billsStrict: "Ketat",
+    billsBalanced: "Seimbang",
+    billsFlexible: "Fleksibel",
+    billsSimulated: "AutoPay simulasi selesai",
   }
 }

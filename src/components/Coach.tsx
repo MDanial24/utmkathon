@@ -37,7 +37,7 @@ interface Message {
 }
 
 export function Coach() {
-  const { user, safeDailySpend, resilienceScore, language, addSavingsPocket, savingsPockets } = useStore()
+  const { user, safeDailySpend, resilienceScore, language, addSavingsPocket, savingsPockets, bills } = useStore()
   const strings = t[language]
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -102,8 +102,9 @@ export function Coach() {
       const triggerGrowth = textToSubmit.includes("invest") || textToSubmit.includes("stock") || textToSubmit.includes("crypto") || textToSubmit.includes("gold") || textToSubmit.includes("growth") || textToSubmit.includes("opportunity") || textToSubmit.includes("market")
       const triggerSave = textToSubmit.includes("save") || textToSubmit.includes("goal") || textToSubmit.includes("fund") || textToSubmit.includes("laptop") || textToSubmit.includes("emergency")
       const triggerDebt = textToSubmit.includes("debt") || textToSubmit.includes("bnpl") || textToSubmit.includes("loan") || textToSubmit.includes("risk") || textToSubmit.includes("credit")
+      const triggerBills = textToSubmit.includes("bill") || textToSubmit.includes("rent") || textToSubmit.includes("autopay") || textToSubmit.includes("commitment") || textToSubmit.includes("lock") || textToSubmit.includes("protected")
 
-      if (triggerFinance || (!triggerGrowth && !triggerSave && !triggerDebt)) {
+      if (triggerFinance || (!triggerGrowth && !triggerSave && !triggerDebt && !triggerBills)) {
         responses.push({
           role: 'assistant',
           agent: 'Finance Strategist',
@@ -182,6 +183,16 @@ export function Coach() {
         })
       }
 
+      if (triggerBills) {
+        const lockedAmount = bills.filter(b => b.isLocked && b.status !== 'paid').reduce((sum, b) => sum + b.amount, 0);
+        const nextBill = bills.filter(b => b.status !== 'paid').sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime())[0];
+        
+        responses.push({
+          role: 'assistant',
+          agent: 'Finance Strategist',
+          content: `You have RM ${lockedAmount.toFixed(2)} protected for bills. ${nextBill ? `Your next bill is ${nextBill.name} due soon.` : 'No upcoming bills detected.'} Protecting your bill money early is why your spendable balance might look lower than your total balance.`
+        })
+      }
       setMessages([...newMessages, ...responses])
       setIsThinking(false)
     }, 1500)
