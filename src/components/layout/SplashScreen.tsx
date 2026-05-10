@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState, useMemo } from "react"
+import Image from "next/image"
 
 // Floating particle component for ambient AI atmosphere
 function Particle({ delay, duration, x, y, size }: { delay: number; duration: number; x: number; y: number; size: number }) {
@@ -268,12 +269,16 @@ export function SplashScreen() {
                 <motion.div
                   animate={{ scale: [1, 1.02, 1] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="w-full h-full flex items-center justify-center p-3"
+                  className="relative z-10 w-full h-full flex items-center justify-center p-3"
                 >
-                  <img
+                  <Image
                     src="/assets/GX-Bank-logo.jpeg"
                     alt="GX Youth"
+                    width={112}
+                    height={112}
                     className="w-full h-full object-contain rounded-xl"
+                    unoptimized
+                    priority
                   />
                 </motion.div>
 
