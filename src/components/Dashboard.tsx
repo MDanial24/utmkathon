@@ -386,9 +386,10 @@ export function Dashboard() {
 }
 
 function PromoCarousel() {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   const slides = [
     {
-      image: "/assets/GX-Banner-logo.jpeg",
+      image: `${basePath}/assets/GX-Banner-logo.jpeg`,
       label: "Powered by",
       name: "GXBank",
       tagline: "Malaysia's Leading Digital Bank",
@@ -397,7 +398,7 @@ function PromoCarousel() {
       accent: "bg-purple-500",
     },
     {
-      image: "/assets/PERSAKA-logo.jpeg",
+      image: `${basePath}/assets/PERSAKA-logo.jpeg`,
       label: "Organized by",
       name: "UTM PERSAKA",
       tagline: "Persatuan Mahasiswa Sains Komputer",
@@ -406,7 +407,7 @@ function PromoCarousel() {
       accent: "bg-rose-500",
     },
     {
-      image: "/assets/runcloud-logo.jpeg",
+      image: `${basePath}/assets/runcloud-logo.jpeg`,
       label: "Sponsored by",
       name: "RunCloud",
       tagline: "Cloud Server Management Platform",
@@ -415,7 +416,7 @@ function PromoCarousel() {
       accent: "bg-cyan-500",
     },
     {
-      image: "/assets/selaDevs-logo.jpeg",
+      image: `${basePath}/assets/selaDevs-logo.jpeg`,
       label: "Built by",
       name: "SELADevs",
       tagline: "GX Youth · UTMKathon 2026",
