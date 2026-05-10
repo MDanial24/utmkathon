@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState, useMemo } from "react"
-import Image from "next/image"
+import logo from "../../../public/assets/GX-Bank-logo.jpeg"
 
 // Floating particle component for ambient AI atmosphere
 function Particle({ delay, duration, x, y, size }: { delay: number; duration: number; x: number; y: number; size: number }) {
@@ -271,14 +271,12 @@ export function SplashScreen() {
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   className="relative z-10 w-full h-full flex items-center justify-center p-3"
                 >
-                  <Image
-                    src="/assets/GX-Bank-logo.jpeg"
+                  <img
+                    src={logo.src}
                     alt="GX Youth"
-                    width={112}
-                    height={112}
                     className="w-full h-full object-contain rounded-xl"
-                    unoptimized
-                    priority
+                    decoding="async"
+                    style={{ filter: 'drop-shadow(0 0 10px rgba(139,92,246,0.3))' }}
                   />
                 </motion.div>
 
