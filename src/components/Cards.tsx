@@ -1,10 +1,47 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { motion } from "framer-motion"
-import { CreditCard, Plus, ShieldCheck, Zap, ArrowUpRight, History } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { CreditCard, Plus, ShieldCheck, Zap, ArrowUpRight, History, Eye, EyeOff, Copy, Check, Lock } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
 export function Cards() {
+  const [isDetailsVisible, setIsDetailsVisible] = useState(false)
+  const [showAuthDialog, setShowAuthDialog] = useState(false)
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [showLimitDialog, setShowLimitDialog] = useState(false)
+  const [spendingLimit, setSpendingLimit] = useState("5000")
+
+  const handleVerify = () => {
+    if (password === "1234") {
+      setIsDetailsVisible(true)
+      setShowAuthDialog(false)
+      setPassword("")
+      setError(false)
+    } else {
+      setError(true)
+    }
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText("4242881299014292")
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const toggleDetails = () => {
+    if (isDetailsVisible) {
+      setIsDetailsVisible(false)
+    } else {
+      setShowAuthDialog(true)
+    }
+  }
+
   return (
     <div className="p-4 space-y-6 pb-24 max-w-lg mx-auto">
       <header className="flex justify-between items-center pt-6">
@@ -16,6 +53,91 @@ export function Cards() {
           <Plus className="w-5 h-5" />
         </button>
       </header>
+
+      {/* Auth Dialog */}
+      <Dialog open={showAuthDialog} onOpenChange={(open) => {
+        setShowAuthDialog(open)
+        if (!open) {
+          setPassword("")
+          setError(false)
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-primary" />
+              Security Verification
+            </DialogTitle>
+            <DialogDescription>
+              Please enter your security password to view sensitive card details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              type="password"
+              placeholder="Enter Password (Hint: 1234)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={error ? "border-destructive focus-visible:ring-destructive/20" : ""}
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && handleVerify()}
+            />
+            {error && <p className="text-[10px] text-destructive mt-2 ml-1">Incorrect password. Please try again.</p>}
+          </div>
+          <DialogFooter className="sm:justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowAuthDialog(false)}>Cancel</Button>
+            <Button onClick={handleVerify}>Verify</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Spending Limit Dialog */}
+      <Dialog open={showLimitDialog} onOpenChange={setShowLimitDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowUpRight className="w-4 h-4 text-amber-500" />
+              Adjust Spending Limit
+            </DialogTitle>
+            <DialogDescription>
+              Set your maximum daily spending limit for this card.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Daily Limit (MYR)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">RM</span>
+                <Input
+                  type="number"
+                  placeholder="Enter Amount"
+                  value={spendingLimit}
+                  onChange={(e) => setSpendingLimit(e.target.value)}
+                  className="pl-10 text-lg font-mono font-bold"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {["1000", "5000", "10000"].map((amount) => (
+                <Button 
+                  key={amount} 
+                  variant="outline" 
+                  size="sm" 
+                  className={`text-[10px] h-8 ${spendingLimit === amount ? 'border-primary bg-primary/5 text-primary' : ''}`}
+                  onClick={() => setSpendingLimit(amount)}
+                >
+                  RM {amount}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setShowLimitDialog(false)}>Cancel</Button>
+            <Button onClick={() => setShowLimitDialog(false)} className="bg-primary hover:bg-primary/90">Update Limit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Main Card Display */}
       <motion.div 
@@ -43,21 +165,58 @@ export function Cards() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex gap-4">
-                <span className="text-xl font-mono tracking-[0.2em]">••••</span>
-                <span className="text-xl font-mono tracking-[0.2em]">••••</span>
-                <span className="text-xl font-mono tracking-[0.2em]">••••</span>
-                <span className="text-xl font-mono">4292</span>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-4">
+                  {isDetailsVisible ? (
+                    <>
+                      <span className="text-xl font-mono">4242</span>
+                      <span className="text-xl font-mono">8812</span>
+                      <span className="text-xl font-mono">9901</span>
+                      <span className="text-xl font-mono">4292</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xl font-mono tracking-[0.2em]">••••</span>
+                      <span className="text-xl font-mono tracking-[0.2em]">••••</span>
+                      <span className="text-xl font-mono tracking-[0.2em]">••••</span>
+                      <span className="text-xl font-mono">4292</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {isDetailsVisible && (
+                    <button 
+                      onClick={handleCopy}
+                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                      title="Copy Card Number"
+                    >
+                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  )}
+                  <button 
+                    onClick={toggleDetails}
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                    title={isDetailsVisible ? "Hide Details" : "Show Details"}
+                  >
+                    {isDetailsVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-[8px] opacity-70 uppercase tracking-tighter">Card Holder</p>
-                  <p className="text-sm font-medium">MUHAMMAD HAZIQ</p>
+                  <p className="text-sm font-medium uppercase tracking-wide">MUHAMMAD HAZIQ</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-[8px] opacity-70 uppercase tracking-tighter">Expires</p>
-                  <p className="text-sm font-medium">09/28</p>
+                <div className="flex gap-6">
+                  <div className="text-right">
+                    <p className="text-[8px] opacity-70 uppercase tracking-tighter">Expires</p>
+                    <p className="text-sm font-medium">09/28</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[8px] opacity-70 uppercase tracking-tighter">CVV</p>
+                    <p className="text-sm font-medium font-mono">{isDetailsVisible ? "123" : "•••"}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -78,14 +237,17 @@ export function Cards() {
             </div>
           </CardContent>
         </Card>
-        <Card className="glass-card">
+        <Card 
+          className="glass-card cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-all duration-300 border-transparent hover:border-amber-500/30"
+          onClick={() => setShowLimitDialog(true)}
+        >
           <CardContent className="p-4 flex flex-col gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
               <ArrowUpRight className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-bold">Spend Limit</p>
-              <p className="text-[10px] text-muted-foreground">Adjust daily limit</p>
+              <p className="text-xs font-bold">Card Spending Limit</p>
+              <p className="text-[10px] text-muted-foreground">Adjust daily limit (RM {spendingLimit})</p>
             </div>
           </CardContent>
         </Card>

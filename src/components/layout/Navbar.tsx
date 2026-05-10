@@ -54,7 +54,7 @@ export function Navbar() {
 
         {/* Center QR Button */}
         <div className="w-1/5 flex justify-center -mt-8">
-          <Link href="/scan" className="w-14 h-14 rounded-full bg-primary flex flex-col items-center justify-center text-white shadow-lg shadow-primary/30 border-4 border-background hover:scale-105 transition-transform">
+          <Link href="/scan" className="w-14 h-14 rounded-full bg-primary flex flex-col items-center justify-center text-white shadow-lg shadow-primary/30 border-4 border-primary hover:scale-105 transition-transform">
             <QrCode className="w-6 h-6" />
             <span className="text-[8px] font-bold mt-0.5">{strings.navPay}</span>
           </Link>
