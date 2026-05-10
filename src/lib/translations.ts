@@ -346,7 +346,7 @@ export const t: Translations = {
     coachHeader: "Resilience Coach",
     coachSubheader: "Ask me anything about your finances",
     coachInputPlaceholder: "Ask about your spending...",
-    coachChipLimit: "How to limit impulse buys?",
+    coachChipLimit: "Can I afford this purchase?",
     coachChipSafe: "What is my safe daily spend?",
     coachChipSave: "How to save for a laptop?",
 
@@ -537,7 +537,7 @@ export const t: Translations = {
     coachHeader: "Jurulatih Ketahanan",
     coachSubheader: "Tanya apa sahaja tentang kewangan anda",
     coachInputPlaceholder: "Tanya tentang perbelanjaan anda...",
-    coachChipLimit: "Cara elak beli ikut nafsu?",
+    coachChipLimit: "Boleh saya mampu beli ini?",
     coachChipSafe: "Berapa bajet harian saya?",
     coachChipSave: "Cara simpan untuk komputer riba?",
 

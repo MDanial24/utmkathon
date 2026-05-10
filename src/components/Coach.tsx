@@ -24,7 +24,7 @@ const AGENTS = [
 interface ChatAction {
   id: string;
   label: string;
-  type: 'create_pocket' | 'postpone' | 'prioritize_emergency' | 'transfer';
+  type: 'create_pocket' | 'postpone' | 'prioritize_emergency' | 'transfer' | 'simulate_affordability';
   payload?: any;
 }
 
@@ -46,6 +46,15 @@ export function Coach() {
   const [input, setInput] = useState("")
   const [isThinking, setIsThinking] = useState(false)
   const [isExecuting, setIsExecuting] = useState(false)
+  
+  // Affordability state
+  const [affordItem, setAffordItem] = useState("")
+  const [affordPrice, setAffordPrice] = useState("")
+  const [affordResult, setAffordResult] = useState<any>(null)
+  const [isSimulating, setIsSimulating] = useState(false)
+  
+  // Savings state
+  const [saveDeposit, setSaveDeposit] = useState("200")
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -60,13 +69,14 @@ export function Coach() {
   const handleAction = async (action: ChatAction) => {
     if (isExecuting) return;
 
-    // 1. Immediately show user choice and remove buttons
-    setMessages(prev => [
-      ...prev.map(m => ({ ...m, actions: undefined })),
-      { role: 'user', content: action.label }
-    ]);
-    
-    setIsExecuting(true);
+    // 1. Immediately show user choice and remove buttons (except for local simulations)
+    if (action.type !== 'simulate_affordability') {
+      setMessages(prev => [
+        ...prev.map(m => ({ ...m, actions: undefined })),
+        { role: 'user', content: action.label }
+      ]);
+      setIsExecuting(true);
+    }
 
     // 2. Artificial delay for realism
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -109,6 +119,53 @@ export function Coach() {
         responseText = `Transfer complete. RM ${action.payload.amount} has been successfully sent to ${action.payload.recipient}. The transaction is now logged in your history.`;
         redirect = { label: "View Transactions", href: "/transactions" };
         break;
+      case 'simulate_affordability':
+        const item = affordItem || "this item";
+        const priceVal = affordPrice;
+        
+        // Push user message
+        setMessages(prev => [
+          ...prev.map(m => ({ ...m, actions: undefined })),
+          { role: 'user', content: `Checking if I can afford ${item} for RM ${priceVal}` }
+        ]);
+        
+        setIsExecuting(true);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const p = parseFloat(priceVal);
+        const impact = p / 14; 
+        const newDailySpend = safeDailySpend - impact;
+        let recommendation = "Safe";
+        if (newDailySpend < 5) recommendation = "Avoid";
+        else if (newDailySpend < 12) recommendation = "Caution";
+        
+        const result = {
+          item,
+          price: p,
+          impact: impact.toFixed(2),
+          newDailySpend: Math.max(0, newDailySpend).toFixed(2),
+          recommendation,
+          debtRiskImpact: (p / 20).toFixed(0)
+        };
+
+        setMessages(prev => [
+          ...prev,
+          { 
+            role: 'assistant', 
+            agent: 'Debt Shield', 
+            content: `I've analyzed the impact of buying ${item}. Here is my recommendation:`,
+            proposal: {
+              type: 'affordability_result',
+              ...result
+            }
+          }
+        ]);
+        
+        // Reset local inputs for next time
+        setAffordItem("");
+        setAffordPrice("");
+        setIsExecuting(false);
+        return; 
     }
 
     setMessages(prev => [
@@ -186,28 +243,15 @@ export function Coach() {
           responses.push({
             role: 'assistant',
             agent: 'Savings Sentinel',
-            content: `I've analyzed your cashflow and your Laptop goal. You have a surplus that could be working harder for you. I've prepared a growth-mode proposal to help you reach your RM 2,500 target faster. Shall we execute it?`,
+            content: `I've analyzed your cashflow and your goals. I've prepared a growth-mode proposal for your Laptop Fund. How much would you like to deposit as a head start?`,
             proposal: {
+              type: 'create_pocket',
               name: 'Laptop Fund',
               target: 2500,
-              current: 200,
               icon: '💻',
               mode: 'growth',
               riskLevel: 'medium'
-            },
-            actions: [
-              {
-                id: 'create_laptop_pocket',
-                label: 'Approve',
-                type: 'create_pocket',
-                payload: { name: 'Laptop Fund', target: 2500, current: 200, icon: '💻', mode: 'growth', riskLevel: 'medium' }
-              },
-              {
-                id: 'postpone',
-                label: 'Decline',
-                type: 'postpone'
-              }
-            ]
+            }
           })
         } else if (user.currentBalance < 500 || resilienceScore < 60) {
           responses.push({
@@ -234,11 +278,14 @@ export function Coach() {
             content: `Analyzing your goals... I see you're saving for a Laptop. If you maintain your current pace, you'll reach your RM 2,500 target in approximately 4 months.`
           })
         }
-      } else if (triggerDebt) {
+      } else if (triggerDebt || textToSubmit.includes("afford") || textToSubmit.includes("buy")) {
         responses.push({
           role: 'assistant',
           agent: 'Debt Shield',
-          content: `Risk alert: I've scanned your recent transactions. You have no active BNPL installments, which is excellent for your Money Health score.`
+          content: "I can help you simulate the impact of a purchase on your financial health. What are you planning to buy?",
+          proposal: {
+            type: 'affordability'
+          }
         })
       } else if (triggerGrowth) {
         responses.push({
@@ -259,9 +306,9 @@ export function Coach() {
   }
 
   const starterPrompts = [
-    { text: "What is my safe daily spend?", icon: Brain, color: "text-amber-500" },
-    { text: "How to save for a laptop?", icon: Target, color: "text-emerald-500" },
-    { text: "How to limit impulse buys?", icon: Shield, color: "text-purple-500" },
+    { text: strings.coachChipSafe, icon: Brain, color: "text-amber-500" },
+    { text: strings.coachChipSave, icon: Target, color: "text-emerald-500" },
+    { text: strings.coachChipLimit, icon: Shield, color: "text-purple-500" },
     { text: "Should I invest in crypto?", icon: TrendingUp, color: "text-blue-500" },
     { text: "Pay RM 50 to Aizat", icon: Send, color: "text-primary" }
   ]
@@ -404,63 +451,191 @@ export function Coach() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 className="w-full max-w-[280px]"
                               >
-                                <Card className="glass-card bg-slate-900/40 border-primary/20 overflow-hidden">
-                                  <CardContent className="p-4 space-y-3">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-xl">
-                                        {m.proposal.icon}
+                                {m.proposal.type === 'affordability' ? (
+                                  <Card className="glass-card bg-slate-900/40 border-purple-500/20 overflow-hidden">
+                                    <CardContent className="p-4 space-y-4">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <Shield className="w-4 h-4 text-purple-500" />
+                                        <p className="text-xs font-bold text-white uppercase tracking-wider">Affordability Simulator</p>
                                       </div>
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <p className="text-xs font-bold text-white">{m.proposal.name}</p>
-                                          <Badge className="text-[7px] h-3 bg-primary/20 text-primary border-primary/20 px-1 font-black">
-                                            {m.proposal.type === 'transfer' ? 'Verified' : 'Managed'}
-                                          </Badge>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-0.5">
-                                          {m.proposal.type === 'transfer' ? (
-                                            <p className="text-[9px] text-muted-foreground">{m.proposal.bank} • 3188 **** 1100</p>
-                                          ) : (
-                                            <p className="text-[9px] text-muted-foreground">RM {m.proposal.current} / RM {m.proposal.target}</p>
-                                          )}
-                                          <span className="text-[9px] text-emerald-500 font-bold">
-                                            {m.proposal.type === 'transfer' ? 'Instant' : '+4.2% p.a.'}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    
-                                    {m.proposal.type !== 'transfer' && (
-                                      <div className="space-y-1.5">
-                                        <div className="flex justify-between items-center text-[9px]">
-                                          <span className="text-primary/80 font-bold capitalize">({m.proposal.riskLevel} Risk)</span>
-                                          <span className="font-bold text-primary">{Math.round((m.proposal.current / m.proposal.target) * 100)}%</span>
-                                        </div>
-                                        <div className="h-1 w-full bg-primary/10 rounded-full overflow-hidden">
-                                          <div 
-                                            className="h-full bg-primary" 
-                                            style={{ width: `${(m.proposal.current / m.proposal.target) * 100}%` }}
+                                      
+                                      <div className="space-y-3">
+                                        <div className="space-y-1">
+                                          <label className="text-[8px] uppercase font-bold text-muted-foreground">Item Name</label>
+                                          <Input 
+                                            placeholder="e.g. New Shoes" 
+                                            value={m.role === 'assistant' && i === messages.length - 1 ? affordItem : ""} 
+                                            onChange={(e) => setAffordItem(e.target.value)}
+                                            disabled={isExecuting || i < messages.length - 1}
+                                            className="h-10 text-sm bg-white/15 border-white/25 !text-white placeholder:text-white/40 disabled:!opacity-70"
                                           />
                                         </div>
+                                        <div className="space-y-1">
+                                          <label className="text-[8px] uppercase font-bold text-muted-foreground">Price (RM)</label>
+                                          <Input 
+                                            type="number" 
+                                            placeholder="0.00" 
+                                            value={m.role === 'assistant' && i === messages.length - 1 ? affordPrice : ""} 
+                                            onChange={(e) => setAffordPrice(e.target.value)}
+                                            disabled={isExecuting || i < messages.length - 1}
+                                            className="h-8 text-xs bg-white/10 border-white/20 text-white placeholder:text-white/40 disabled:opacity-50"
+                                          />
+                                        </div>
+                                        
+                                        {i === messages.length - 1 && (
+                                          <Button 
+                                            className="w-full h-8 text-[10px] bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                                            onClick={() => handleAction({ id: 'sim_afford', label: 'Simulate', type: 'simulate_affordability' })}
+                                            disabled={!affordPrice || isExecuting}
+                                          >
+                                            {isExecuting ? "Simulating..." : "Simulate Impact"}
+                                          </Button>
+                                        )}
                                       </div>
-                                    )}
-
-                                    {m.proposal.type === 'transfer' && (
-                                      <div className="flex justify-between items-center text-[9px] py-1">
-                                        <span className="text-muted-foreground">Amount to send</span>
-                                        <span className="text-white font-bold">RM {m.proposal.amount.toFixed(2)}</span>
+                                    </CardContent>
+                                  </Card>
+                                ) : m.proposal.type === 'affordability_result' ? (
+                                  <Card className="glass-card bg-slate-900/40 border-purple-500/20 overflow-hidden">
+                                    <CardContent className="p-4 space-y-4">
+                                      <div className={cn(
+                                        "p-2 rounded-lg text-center text-[9px] font-black uppercase tracking-widest",
+                                        m.proposal.recommendation === "Avoid" ? "bg-rose-500 text-white" : 
+                                        m.proposal.recommendation === "Caution" ? "bg-amber-500 text-black" : "bg-emerald-500 text-white"
+                                      )}>
+                                        Recommendation: {m.proposal.recommendation}
                                       </div>
-                                    )}
+                                      
+                                      <div className="flex justify-around text-center gap-2">
+                                        <div className="flex-1 p-2 rounded-xl bg-white/5 border border-white/10">
+                                          <p className="text-[7px] text-muted-foreground uppercase font-bold">New Daily</p>
+                                          <p className="text-xs font-bold text-white">RM {m.proposal.newDailySpend}</p>
+                                        </div>
+                                        <div className="flex-1 p-2 rounded-xl bg-white/5 border border-white/10">
+                                          <p className="text-[7px] text-muted-foreground uppercase font-bold">Risk Impact</p>
+                                          <p className="text-xs font-bold text-white">+{m.proposal.debtRiskImpact}</p>
+                                        </div>
+                                      </div>
 
-                                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                                      <span className="text-[8px] text-emerald-500 font-bold flex items-center gap-1">
-                                        {m.proposal.type === 'transfer' ? <Send className="w-2 h-2" /> : <TrendingUp className="w-2 h-2" />}
-                                        {m.proposal.type === 'transfer' ? 'Security Cleared' : 'Growth Enabled'}
-                                      </span>
-                                      <span className="text-[8px] text-primary font-bold uppercase tracking-wider">Proposal Preview</span>
-                                    </div>
-                                  </CardContent>
-                                </Card>
+                                      <p className="text-[9px] text-muted-foreground italic leading-tight px-1">
+                                        {m.proposal.recommendation === "Avoid" ? 
+                                          "This will drop your budget below RM5. Avoid this purchase." :
+                                          m.proposal.recommendation === "Caution" ?
+                                          "You can afford this, but it will significantly tighten your budget." :
+                                          "Well within your range. Won't significantly impact your budget."
+                                        }
+                                      </p>
+                                    </CardContent>
+                                  </Card>
+                                ) : m.proposal.type === 'create_pocket' ? (
+                                  <Card className="glass-card bg-slate-900/40 border-emerald-500/20 overflow-hidden">
+                                    <CardContent className="p-4 space-y-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl">
+                                          {m.proposal.icon}
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="text-xs font-bold text-white">{m.proposal.name}</p>
+                                          <p className="text-[9px] text-muted-foreground">Target: RM {m.proposal.target}</p>
+                                        </div>
+                                        <Badge className="text-[7px] h-3 bg-emerald-500/20 text-emerald-500 border-emerald-500/20 px-1 font-black">
+                                          {m.proposal.mode.toUpperCase()}
+                                        </Badge>
+                                      </div>
+
+                                      <div className="space-y-1.5">
+                                        <label className="text-[8px] uppercase font-bold text-muted-foreground">Initial Deposit (RM)</label>
+                                        <Input 
+                                          type="number" 
+                                          value={i === messages.length - 1 ? saveDeposit : "200"} 
+                                          onChange={(e) => setSaveDeposit(e.target.value)}
+                                          disabled={isExecuting || i < messages.length - 1}
+                                          className="h-10 text-sm bg-white/15 border-white/25 !text-white placeholder:text-white/40 disabled:!opacity-70"
+                                        />
+                                        <p className="text-[7px] text-muted-foreground italic">Deducted from your RM {user.currentBalance.toFixed(2)} balance</p>
+                                      </div>
+
+                                      {i === messages.length - 1 && (
+                                        <div className="flex gap-2">
+                                          <Button 
+                                            className="flex-1 h-8 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                                            onClick={() => handleAction({ 
+                                              id: 'approve_save', 
+                                              label: 'Approve & Deposit', 
+                                              type: 'create_pocket',
+                                              payload: { ...m.proposal, current: parseFloat(saveDeposit) || 0 }
+                                            })}
+                                            disabled={isExecuting}
+                                          >
+                                            {isExecuting ? "Processing..." : "Approve"}
+                                          </Button>
+                                          <Button 
+                                            variant="outline"
+                                            className="flex-1 h-8 text-[10px] border-white/10 text-white"
+                                            onClick={() => handleAction({ id: 'decline_save', label: 'Decline', type: 'postpone' })}
+                                            disabled={isExecuting}
+                                          >
+                                            Decline
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </CardContent>
+                                  </Card>
+                                ) : (
+                                  <Card className="glass-card bg-slate-900/40 border-primary/20 overflow-hidden">
+                                    <CardContent className="p-4 space-y-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-xl">
+                                          {m.proposal.icon || (m.proposal.type === 'transfer' ? '💸' : '🎯')}
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-xs font-bold text-white">{m.proposal.name || (m.proposal.type === 'transfer' ? 'Transfer' : 'Pocket')}</p>
+                                            <Badge className="text-[7px] h-3 bg-primary/20 text-primary border-primary/20 px-1 font-black">
+                                              {m.proposal.type === 'transfer' ? 'Verified' : 'Managed'}
+                                            </Badge>
+                                          </div>
+                                          <div className="flex items-center justify-between mt-0.5">
+                                            {m.proposal.type === 'transfer' ? (
+                                              <p className="text-[9px] text-muted-foreground">{m.proposal.bank} • 3188 **** 1100</p>
+                                            ) : (
+                                              <p className="text-[9px] text-muted-foreground">RM {m.proposal.current} / RM {m.proposal.target}</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {m.proposal.type !== 'transfer' && m.proposal.target && (
+                                        <div className="space-y-1.5">
+                                          <div className="flex justify-between items-center text-[9px]">
+                                            <span className="text-primary/80 font-bold capitalize">({m.proposal.riskLevel || 'Low'} Risk)</span>
+                                            <span className="font-bold text-primary">{Math.round((m.proposal.current / m.proposal.target) * 100)}%</span>
+                                          </div>
+                                          <div className="h-1 w-full bg-primary/10 rounded-full overflow-hidden">
+                                            <div 
+                                              className="h-full bg-primary" 
+                                              style={{ width: `${(m.proposal.current / m.proposal.target) * 100}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {m.proposal.type === 'transfer' && (
+                                        <div className="flex justify-between items-center text-[9px] py-1">
+                                          <span className="text-muted-foreground">Amount to send</span>
+                                          <span className="text-white font-bold">RM {m.proposal.amount?.toFixed(2)}</span>
+                                        </div>
+                                      )}
+
+                                      <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                        <span className="text-[8px] text-emerald-500 font-bold flex items-center gap-1">
+                                          {m.proposal.type === 'transfer' ? <Send className="w-2 h-2" /> : <TrendingUp className="w-2 h-2" />}
+                                          {m.proposal.type === 'transfer' ? 'Security Cleared' : 'Growth Enabled'}
+                                        </span>
+                                        <span className="text-[8px] text-primary font-bold uppercase tracking-wider">Proposal Preview</span>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                )}
                               </motion.div>
                             )}
 

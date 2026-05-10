@@ -291,13 +291,12 @@ export function Dashboard() {
 
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-5 gap-1">
+      <div className="grid grid-cols-4 gap-1">
         {[
           { icon: History, label: strings.actionTransaction, href: "/transactions", color: "text-indigo-500", bg: "bg-indigo-500/10" },
           { icon: Send, label: strings.actionTransfer, href: "/transfer", color: "text-emerald-500", bg: "bg-emerald-500/10" },
           { icon: CalendarClock, label: strings.navCards, href: "/bills", color: "text-purple-500", bg: "bg-purple-500/10", isBills: true },
           { icon: Wallet, label: strings.actionTopUp, href: "#", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-          { icon: ShieldCheck, label: strings.actionShield, href: "/debt-shield", color: "text-primary", bg: "bg-primary/10" },
         ].map((action) => {
           const isTopUp = action.label === strings.actionTopUp;
           const label = action.isBills ? strings.billsHeader.split(' ')[0] : action.label;
@@ -402,7 +401,7 @@ function PromoCarousel() {
       label: "Organized by",
       name: "UTM PERSAKA",
       tagline: "Persatuan Mahasiswa Sains Komputer",
-      badge: "UTMKathon 2026",
+      badge: "UTMxHackathon 2026",
       gradient: "from-rose-700/85 via-red-600/75 to-slate-700/80",
       accent: "bg-rose-500",
     },
@@ -418,8 +417,8 @@ function PromoCarousel() {
     {
       image: `${basePath}/assets/selaDevs-logo.jpeg`,
       label: "Built by",
-      name: "SELADevs",
-      tagline: "GX Youth · UTMKathon 2026",
+      name: "SelaDevs",
+      tagline: "GX Youth · UTMxHackathon 2026",
       badge: "🏆 Team",
       gradient: "from-zinc-900/95 via-emerald-950/90 to-zinc-900/95",
       accent: "bg-emerald-500",
