@@ -34,6 +34,7 @@ interface Message {
   content: string;
   actions?: ChatAction[];
   proposal?: any; // New field for interactive card preview
+  redirect?: { label: string; href: string }; // New field for post-action navigation
 }
 
 export function Coach() {
@@ -44,6 +45,7 @@ export function Coach() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isThinking, setIsThinking] = useState(false)
+  const [isExecuting, setIsExecuting] = useState(false)
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -55,8 +57,22 @@ export function Coach() {
     }
   }, [messages, isThinking])
 
-  const handleAction = (action: ChatAction) => {
+  const handleAction = async (action: ChatAction) => {
+    if (isExecuting) return;
+
+    // 1. Immediately show user choice and remove buttons
+    setMessages(prev => [
+      ...prev.map(m => ({ ...m, actions: undefined })),
+      { role: 'user', content: action.label }
+    ]);
+    
+    setIsExecuting(true);
+
+    // 2. Artificial delay for realism
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     let responseText = "";
+    let redirect;
 
     switch (action.type) {
       case 'create_pocket':
@@ -69,13 +85,15 @@ export function Coach() {
           mode: action.payload.mode || 'savings',
           riskLevel: action.payload.riskLevel
         });
-        responseText = `Done! I've set up your ${action.payload.name} pocket with an initial RM ${action.payload.current}. Your Resilience Score is recalculating...`;
+        responseText = `Success! I've initialized your ${action.payload.name} with RM ${action.payload.current}. You can track your progress in the Savings tab.`;
+        redirect = { label: "Go to Savings", href: "/savings" };
         break;
       case 'postpone':
-        responseText = "Wise choice. We'll revisit this goal when your liquidity improves.";
+        responseText = "Understood. I've moved this suggestion to the backlog. We'll revisit this when your cashflow improves.";
         break;
       case 'prioritize_emergency':
-        responseText = "I've noted your focus on the Emergency Fund. Your safety net is your priority.";
+        responseText = "Smart move. Prioritizing your Emergency Fund will significantly boost your Resilience Score. Let's manage it in your Savings pockets.";
+        redirect = { label: "Go to Savings", href: "/savings" };
         break;
       case 'transfer':
         // Execute real transaction
@@ -88,15 +106,22 @@ export function Coach() {
           type: 'expense',
           confidence: 1.0
         });
-        responseText = `Transaction complete! I've successfully transferred RM ${action.payload.amount} to ${action.payload.recipient}. Your transaction ID is TXN-${Math.floor(Math.random()*1000000)}.`;
+        responseText = `Transfer complete. RM ${action.payload.amount} has been successfully sent to ${action.payload.recipient}. The transaction is now logged in your history.`;
+        redirect = { label: "View Transactions", href: "/transactions" };
         break;
     }
 
     setMessages(prev => [
-      ...prev.map(m => ({ ...m, actions: undefined })),
-      { role: 'user', content: action.label },
-      { role: 'assistant', agent: action.type === 'transfer' ? 'Finance Strategist' : 'Savings Sentinel', content: responseText }
+      ...prev,
+      { 
+        role: 'assistant', 
+        agent: action.type === 'transfer' ? 'Finance Strategist' : 'Savings Sentinel', 
+        content: responseText,
+        redirect: redirect
+      }
     ]);
+    
+    setIsExecuting(false);
   }
 
   const sendMessage = (overrideText?: string) => {
@@ -348,12 +373,29 @@ export function Coach() {
                             ) : <User className="w-4 h-4" />}
                           </div>
                           <div className={cn("flex flex-col gap-3 max-w-[90%]", m.role === 'user' ? "items-end" : "items-start")}>
-                            <div className={cn(
-                              "p-3 rounded-2xl text-[11px] leading-relaxed shadow-sm w-fit",
-                              m.role === 'assistant' ? "bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5" : "bg-primary text-white font-medium"
-                            )}>
-                              {m.content}
-                            </div>
+                              <div className={cn(
+                                "p-3 rounded-2xl text-[11px] leading-relaxed shadow-sm w-fit",
+                                m.role === 'assistant' ? "bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5" : "bg-primary text-white font-medium"
+                              )}>
+                                {m.content}
+                              </div>
+
+                              {/* Redirect Button */}
+                              {m.redirect && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 5 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.2 }}
+                                >
+                                  <Link 
+                                    href={m.redirect.href}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-[10px] font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all group"
+                                  >
+                                    {m.redirect.label}
+                                    <TrendingUp className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                                  </Link>
+                                </motion.div>
+                              )}
 
                             {/* Proposal Card Rendering */}
                             {m.proposal && (
@@ -446,7 +488,7 @@ export function Coach() {
                     )
                   })}
 
-                  {isThinking && (
+                  {(isThinking || isExecuting) && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-2">
                       <div className="flex gap-3">
                         <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border bg-primary/10 border-primary/20">
@@ -456,7 +498,9 @@ export function Coach() {
                           <span className="w-1 h-1 bg-primary rounded-full animate-bounce" />
                           <span className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
                           <span className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
-                          <span className="text-[9px] text-muted-foreground ml-2 font-medium">Council is deliberating...</span>
+                          <span className="text-[9px] text-muted-foreground ml-2 font-medium">
+                            {isExecuting ? "Executing secure transaction..." : "Council is deliberating..."}
+                          </span>
                         </div>
                       </div>
                     </motion.div>
@@ -495,8 +539,8 @@ export function Coach() {
 
         <div className="relative group">
           <Input
-            placeholder={isThinking ? "Wait for the council..." : strings.coachInputPlaceholder}
-            disabled={isThinking}
+            placeholder={isThinking || isExecuting ? "Wait for the council..." : strings.coachInputPlaceholder}
+            disabled={isThinking || isExecuting}
             className="pr-12 bg-white dark:bg-zinc-900/50 border-slate-200 dark:border-white/10 h-12 rounded-2xl text-xs shadow-sm focus:ring-primary/20 disabled:bg-slate-50 dark:disabled:bg-white/5"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -504,7 +548,7 @@ export function Coach() {
           />
           <Button
             size="icon"
-            disabled={isThinking || !input.trim()}
+            disabled={isThinking || isExecuting || !input.trim()}
             className="absolute right-1 top-1 w-10 h-10 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 transition-all active:scale-95 disabled:grayscale disabled:opacity-50"
             onClick={() => sendMessage()}
           >

@@ -4,7 +4,7 @@ import { useStore } from "@/store/useStore"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { TrendingUp, AlertTriangle, ShieldCheck, Wallet, Calendar, Settings as SettingsIcon, QrCode, Send, History, CalendarClock, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
@@ -30,7 +30,7 @@ export function Dashboard() {
     isSpendGuardActive
   } = useStore()
   const bills = useStore(state => state.bills)
-  
+
   const lockedAmount = bills
     .filter(b => b.isLocked && b.status !== 'paid')
     .reduce((sum, b) => sum + b.amount, 0);
@@ -93,7 +93,7 @@ export function Dashboard() {
 
     if (user.incomeSource === "fixed") {
       const daysLeft = getDaysRemaining()
-      
+
       if (user.fixedFrequency === "weekly") {
         // Divide monthly commitments to 4 weeks (simplified weekly commitment)
         const weeklyCommitment = totalCommitments / 4
@@ -108,34 +108,34 @@ export function Dashboard() {
       const start = user.lumpStartDate ? new Date(user.lumpStartDate) : (user.setupDate ? new Date(user.setupDate) : new Date())
       const duration = user.durationDays || 30
       const end = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000)
-      
+
       const today = new Date()
       const diffTime = end.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
       const remainingDays = diffDays > 0 ? diffDays : duration
-      
+
       // Calculate commitments for the remaining period
       const remainingMonths = remainingDays / 30
       const commitmentsForRemainingPeriod = totalCommitments * remainingMonths
       const remainingBalance = Math.max(0, balance - commitmentsForRemainingPeriod)
-      
+
       calculatedDaily = remainingBalance / remainingDays
     } else {
       // irregular / none
       const start = user.setupDate ? new Date(user.setupDate) : new Date()
       const duration = user.durationDays || 30
       const end = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000)
-      
+
       const today = new Date()
       const diffTime = end.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
       const remainingDays = diffDays > 0 ? diffDays : duration
-      
+
       // Calculate commitments for the remaining period
       const remainingMonths = remainingDays / 30
       const commitmentsForRemainingPeriod = totalCommitments * remainingMonths
       const remainingBalance = Math.max(0, balance - commitmentsForRemainingPeriod)
-      
+
       calculatedDaily = remainingBalance / remainingDays
     }
 
@@ -228,7 +228,7 @@ export function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card 
+          <Card
             className={cn(
               "glass-card border-primary/20 transition-all duration-300 cursor-pointer select-none relative overflow-hidden h-full flex flex-col justify-between",
               safeDailyView === 'quota' && quotaRemaining < 0 && "border-rose-500/30 bg-rose-500/5 shadow-lg shadow-rose-500/5"
@@ -264,9 +264,9 @@ export function Dashboard() {
                       )} />
                     </div>
                     <p className="text-[9px] text-muted-foreground mt-1.5 leading-relaxed font-medium">
-                      {quotaRemaining < 0 
+                      {quotaRemaining < 0
                         ? `Overspent by RM ${Math.abs(quotaRemaining).toFixed(2)} today!`
-                        : `RM ${quotaRemaining.toFixed(2)} left of your RM ${initialSafeDaily.toFixed(2)} limit`
+                        : `Daily spend limit: RM ${initialSafeDaily.toFixed(2)}`
                       }
                     </p>
                   </>
@@ -288,7 +288,7 @@ export function Dashboard() {
           </Card>
         </motion.div>
       </div>
-      
+
 
       {/* Quick Actions */}
       <div className="grid grid-cols-5 gap-1">
@@ -327,108 +327,8 @@ export function Dashboard() {
       </div>
 
 
-      {/* Risk Indicators */}
-      <Card className="glass-card overflow-hidden">
-        <CardHeader className="p-4">
-          <CardTitle className="text-sm font-medium">{strings.sectionHealthCheck}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">{strings.riskCashflow}</span>
-              <span className={cn(
-                "font-medium",
-                cashflowRisk === 'high' ? "text-rose-500" : cashflowRisk === 'medium' ? "text-amber-500" : "text-emerald-500"
-              )}>
-                {cashflowRisk.toUpperCase()}
-              </span>
-            </div>
-            <Progress value={cashflowRisk === 'high' ? 85 : cashflowRisk === 'medium' ? 60 : 20} className="h-1.5" />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">{strings.riskDebtShield}</span>
-              <span className="text-emerald-500 font-medium">HEALTHY ({debtRiskScore}/100)</span>
-            </div>
-            <Progress value={debtRiskScore} className="h-1.5" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Insights */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold px-1">{strings.sectionInsights}</h3>
-
-        {lockedAmount > 0 && (
-          <motion.div 
-            className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex gap-3 items-start cursor-pointer"
-            whileHover={{ scale: 1.02 }}
-            onClick={() => window.location.href = '/bills'}
-          >
-            <div className="p-2 rounded-xl bg-purple-500/20 text-purple-500">
-              <CalendarClock className="w-4 h-4" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-purple-600">
-                {strings.billsProtected}: RM {lockedAmount.toFixed(2)}
-              </p>
-              <p className="text-[11px] text-purple-800/80">
-                RM {spendableBalance.toFixed(2)} {strings.billsSafe}
-              </p>
-            </div>
-          </motion.div>
-        )}
-        {isSpendGuardActive ? (
-          <motion.div
-            className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex gap-3 items-start cursor-pointer"
-            whileHover={{ scale: 1.02 }}
-            onClick={() => setShowGuardModal(true)}
-          >
-            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-500">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-emerald-600">
-                {language === 'ms' ? 'Pengawal Bajet Aktif' : 'Spend Guard Active'}
-              </p>
-              <p className="text-[11px] text-emerald-800/80">
-                {language === 'ms'
-                  ? 'Kewangan anda dilindungi. Had harian dikurangkan untuk mengelakkan risiko.'
-                  : 'Your finances are protected. Daily spending limit reduced to avoid cashflow risk.'}
-              </p>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start cursor-pointer"
-            whileHover={{ scale: 1.02 }}
-            onClick={() => setShowGuardModal(true)}
-          >
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-amber-600">{strings.insightBrokeDate}</p>
-              <p className="text-[11px] text-amber-800/80">{strings.insightBrokeDesc}</p>
-            </div>
-          </motion.div>
-        )}
-
-        <motion.div
-          className="p-3 rounded-2xl bg-primary/10 border border-primary/20 flex gap-3 items-start"
-          whileHover={{ scale: 1.02 }}
-        >
-          <div className="p-2 rounded-xl bg-primary/20 text-primary">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-primary">{strings.insightSavings}</p>
-            <p className="text-[11px] text-primary-800/80">{strings.insightSavingsDesc}</p>
-          </div>
-
-        </motion.div>
-      </div>
+      {/* Promotional Banner Carousel */}
+      <PromoCarousel />
 
       {/* Mini Transactions */}
       <div className="space-y-3">
@@ -481,6 +381,176 @@ export function Dashboard() {
         open={showBalanceDrawer}
         onClose={() => setShowBalanceDrawer(false)}
       />
+    </div>
+  )
+}
+
+function PromoCarousel() {
+  const slides = [
+    {
+      image: "/assets/GX-Banner-logo.jpeg",
+      label: "Powered by",
+      name: "GXBank",
+      tagline: "Malaysia's Leading Digital Bank",
+      badge: "Official Partner",
+      gradient: "from-purple-600/90 via-fuchsia-600/80 to-pink-500/70",
+      accent: "bg-purple-500",
+    },
+    {
+      image: "/assets/PERSAKA-logo.jpeg",
+      label: "Organized by",
+      name: "UTM PERSAKA",
+      tagline: "Persatuan Mahasiswa Sains Komputer",
+      badge: "UTMKathon 2026",
+      gradient: "from-rose-700/85 via-red-600/75 to-slate-700/80",
+      accent: "bg-rose-500",
+    },
+    {
+      image: "/assets/runcloud-logo.jpeg",
+      label: "Sponsored by",
+      name: "RunCloud",
+      tagline: "Cloud Server Management Platform",
+      badge: "Cloud Sponsor",
+      gradient: "from-slate-800/90 via-slate-700/85 to-cyan-900/75",
+      accent: "bg-cyan-500",
+    },
+    {
+      image: "/assets/selaDevs-logo.jpeg",
+      label: "Built by",
+      name: "SELADevs",
+      tagline: "GX Youth · UTMKathon 2026",
+      badge: "🏆 Team",
+      gradient: "from-zinc-900/95 via-emerald-950/90 to-zinc-900/95",
+      accent: "bg-emerald-500",
+    }
+  ]
+
+  const [index, setIndex] = useState(0)
+  const [progressKey, setProgressKey] = useState(0)
+
+  const goTo = (i: number) => {
+    setIndex(i)
+    setProgressKey(prev => prev + 1) // reset animation
+  }
+
+  const goNext = () => goTo((index + 1) % slides.length)
+  const goPrev = () => goTo((index - 1 + slides.length) % slides.length)
+
+  // Auto-advance timer
+  useEffect(() => {
+    const timer = setInterval(goNext, 5000)
+    return () => clearInterval(timer)
+  }, [index])
+
+  const current = slides[index]
+
+  return (
+    <div className="space-y-2.5">
+      {/* Section Label */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-3.5 rounded-full bg-primary" />
+          <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Our Partners</h3>
+        </div>
+        <span className="text-[9px] text-muted-foreground/60 font-medium tabular-nums">{index + 1}/{slides.length}</span>
+      </div>
+
+      {/* Carousel Container */}
+      <div className="relative w-full h-36 overflow-hidden rounded-2xl shadow-lg border border-white/5 select-none">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="absolute inset-0 w-full h-full"
+          >
+            {/* Themed gradient background */}
+            <div className={cn("absolute inset-0 bg-gradient-to-br", current.gradient)} />
+
+            {/* Subtle pattern overlay */}
+            <div className="absolute inset-0 opacity-[0.04]"
+              style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '20px 20px' }}
+            />
+
+            {/* Content layout */}
+            <div className="relative z-10 h-full flex items-center px-5 gap-5">
+              {/* Logo container */}
+              <div className="w-20 h-20 rounded-2xl bg-white shadow-xl shadow-black/20 flex items-center justify-center shrink-0 overflow-hidden p-2.5">
+                <img
+                  src={current.image}
+                  alt={current.name}
+                  className="w-full h-full object-contain"
+                  draggable={false}
+                />
+              </div>
+
+              {/* Text content */}
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-white/50">{current.label}</span>
+                <h4 className="text-base font-black text-white leading-tight tracking-tight">{current.name}</h4>
+                <p className="text-[10px] text-white/60 leading-relaxed font-medium truncate">{current.tagline}</p>
+                <span className="inline-block mt-0.5 text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/15 text-white/80 backdrop-blur-sm border border-white/10">
+                  {current.badge}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Swipe gesture layer */}
+        <div
+          className="absolute inset-0 z-20"
+          onMouseDown={(e) => {
+            const startX = e.clientX;
+            const onMouseUp = (upEvent: MouseEvent) => {
+              const diff = startX - upEvent.clientX;
+              if (diff > 40) goNext();
+              if (diff < -40) goPrev();
+              window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mouseup', onMouseUp);
+          }}
+          onTouchStart={(e) => {
+            const startX = e.touches[0].clientX;
+            const onTouchEnd = (endEvent: TouchEvent) => {
+              const diff = startX - endEvent.changedTouches[0].clientX;
+              if (diff > 40) goNext();
+              if (diff < -40) goPrev();
+              window.removeEventListener('touchend', onTouchEnd);
+            };
+            window.addEventListener('touchend', onTouchEnd);
+          }}
+        />
+
+        {/* Auto-progress bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 z-30">
+          <motion.div
+            key={progressKey}
+            className={cn("h-full rounded-r-full", current.accent)}
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 5, ease: "linear" }}
+          />
+        </div>
+      </div>
+
+      {/* Dot indicators */}
+      <div className="flex justify-center gap-1.5 pt-0.5">
+        {slides.map((slide, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={cn(
+              "rounded-full transition-all duration-400",
+              i === index
+                ? cn("w-5 h-1.5", slide.accent, "shadow-sm")
+                : "w-1.5 h-1.5 bg-foreground/10 hover:bg-foreground/20"
+            )}
+          />
+        ))}
+      </div>
     </div>
   )
 }
