@@ -16,7 +16,7 @@ import { DeleteConfirmModal } from "./DeleteConfirmModal"
 import { AutoSaveModal } from "./AutoSaveModal"
 
 export function Savings() {
-  const { savingsPockets, language, isAutoSaveActive, toggleAutoSave, autoSaveTargetIds, autoSaveFrequency, autoSaveAmount } = useStore()
+  const { savingsPockets, language, isAutoSaveActive, toggleAutoSave, autoSaveTargetIds, autoSaveFrequency, autoSaveAmount, pendingMainGoal } = useStore()
   const strings = t[language]
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -31,6 +31,14 @@ export function Savings() {
   useEffect(() => {
     setHasHydrated(true)
   }, [])
+
+  // Auto-trigger modal on mount if onboarding goal is pending
+  useEffect(() => {
+    if (hasHydrated && pendingMainGoal) {
+      setEditPocket(null)
+      setIsModalOpen(true)
+    }
+  }, [pendingMainGoal, hasHydrated])
 
   const handleOpenDeposit = (pocket: SavingsPocket) => {
     setSelectedPocket(pocket)
@@ -61,6 +69,13 @@ export function Savings() {
   }
 
   if (!hasHydrated) return null;
+
+  // Sort pockets: primary goals always on top
+  const sortedPockets = [...savingsPockets].sort((a, b) => {
+    const aMain = a.isMainGoal ? 1 : 0;
+    const bMain = b.isMainGoal ? 1 : 0;
+    return bMain - aMain;
+  })
 
   return (
     <div className="p-4 space-y-6 pb-24 max-w-lg mx-auto">
@@ -129,10 +144,11 @@ export function Savings() {
       {/* Savings Pockets */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold px-1">{strings.saveActiveGoals}</h3>
-        {savingsPockets.map((pocket, i) => {
+        {sortedPockets.map((pocket, i) => {
           const isTargeted = autoSaveTargetIds.includes(pocket.id);
           const isActive = isAutoSaveActive && isTargeted;
           const isGrowth = pocket.mode === 'growth';
+          const isMain = pocket.isMainGoal;
 
           const pocketNameMap: Record<string, string> = {
             '1': strings.savePocketEmerg,
@@ -147,11 +163,13 @@ export function Savings() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
+            className={cn(isMain && "sticky top-2 z-20")}
           >
             <Card className={cn(
               "glass-card overflow-hidden group transition-all duration-300",
               isActive && "ring-1 ring-primary/30 bg-primary/5 shadow-lg shadow-primary/5",
-              isGrowth && "border-primary/20 shadow-primary/5"
+              isGrowth && "border-primary/20 shadow-primary/5",
+              isMain && "border-purple-500/40 bg-purple-50/5 dark:bg-slate-900/90 shadow-xl shadow-purple-500/10 scale-[1.02] backdrop-blur-md bg-opacity-95 dark:bg-opacity-95"
             )}>
               <CardContent className="p-4 space-y-4">
                 <div className="flex justify-between items-start">
@@ -159,7 +177,7 @@ export function Savings() {
                     <div className="relative">
                       <div className={cn(
                         "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner transition-all duration-500",
-                        isGrowth ? "bg-primary/20 scale-105 rotate-3 shadow-primary/20" : "bg-secondary"
+                        isMain ? "bg-purple-500/25 scale-110 shadow-purple-500/20 text-3xl" : isGrowth ? "bg-primary/20 scale-105 rotate-3 shadow-primary/20" : "bg-secondary"
                       )}>
                         {pocket.icon}
                       </div>
@@ -174,15 +192,20 @@ export function Savings() {
                       )}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold">{displayName}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className={cn("text-sm font-bold", isMain && "text-purple-600 dark:text-purple-300 text-base")}>{displayName}</p>
+                        {isMain && (
+                          <Badge className="text-[8px] h-3.5 bg-purple-500/25 text-purple-600 dark:text-purple-300 border-purple-500/35 px-1.5 font-black uppercase tracking-wider animate-pulse shrink-0">
+                            🎯 Primary
+                          </Badge>
+                        )}
                         {isGrowth && (
-                          <Badge className="text-[8px] h-3.5 bg-primary/20 text-primary border-primary/20 px-1 font-black">
+                          <Badge className="text-[8px] h-3.5 bg-primary/20 text-primary border-primary/20 px-1 font-black shrink-0">
                             {strings.saveInvestedBadge}
                           </Badge>
                         )}
                         {isActive && (
-                          <span className="text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                          <span className="text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
                             ✨ Funding
                           </span>
                         )}
@@ -219,11 +242,11 @@ export function Savings() {
                         <span className="text-[9px] text-primary/80 font-bold capitalize">({pocket.riskLevel} Risk)</span>
                       )}
                     </div>
-                    <span className="font-bold text-primary">{Math.round((pocket.current / pocket.target) * 100)}%</span>
+                    <span className={cn("font-bold text-primary", isMain && "text-purple-600 dark:text-purple-300")}>{Math.round((pocket.current / pocket.target) * 100)}%</span>
                   </div>
                   <Progress 
                     value={(pocket.current / pocket.target) * 100} 
-                    className={cn("h-2", isGrowth && "bg-primary/10")} 
+                    className={cn("h-2", isGrowth && "bg-primary/10", isMain && "[&>div]:bg-purple-500 bg-purple-500/10")} 
                   />
                 </div>
 
@@ -237,7 +260,7 @@ export function Savings() {
                   </div>
                   <button 
                     onClick={() => handleOpenDeposit(pocket)}
-                    className="text-[10px] text-primary font-bold flex items-center gap-1 hover:gap-2 transition-all"
+                    className={cn("text-[10px] text-primary font-bold flex items-center gap-1 hover:gap-2 transition-all", isMain && "text-purple-600 dark:text-purple-300")}
                   >
                     {strings.saveAddFunds} <ArrowUpRight className="w-3 h-3" />
                   </button>

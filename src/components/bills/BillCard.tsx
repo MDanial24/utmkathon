@@ -96,7 +96,7 @@ export function BillCard({ bill, onEdit }: BillCardProps) {
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end" className="rounded-xl border-white/10 bg-slate-900/95 backdrop-blur-xl">
+              <DropdownMenuContent className="rounded-xl border-white/10 bg-slate-900/95 backdrop-blur-xl">
                 <DropdownMenuItem 
                   className="text-xs font-bold gap-2 text-white/70 hover:text-white"
                   onClick={() => onEdit(bill)}

@@ -12,7 +12,7 @@ interface ResilienceModalProps {
 }
 
 export function ResilienceModal({ isOpen, onClose, score }: ResilienceModalProps) {
-  const { language } = useStore()
+  const { language, resilienceCashflowScore, resilienceSavingsScore, resilienceDebtScore } = useStore()
   const strings = t[language]
 
   // Determine status color and text based on score
@@ -61,25 +61,25 @@ export function ResilienceModal({ isOpen, onClose, score }: ResilienceModalProps
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-medium">
                       <span className="flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5 text-primary" /> {strings.resModalCashflow}</span>
-                      <span className="text-primary font-bold">65%</span>
+                      <span className="text-primary font-bold">{resilienceCashflowScore}%</span>
                     </div>
-                    <Progress value={65} className="h-2 bg-primary/10" />
+                    <Progress value={resilienceCashflowScore} className="h-2 bg-primary/10" />
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-medium">
                       <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-emerald-500" /> {strings.resModalSavings}</span>
-                      <span className="text-emerald-600">40%</span>
+                      <span className="text-emerald-600">{resilienceSavingsScore}%</span>
                     </div>
-                    <Progress value={40} className="h-2 bg-emerald-100" />
+                    <Progress value={resilienceSavingsScore} className="h-2 bg-emerald-100" />
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-medium">
                       <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-purple-500" /> {strings.resModalDebt}</span>
-                      <span className="text-purple-600">95%</span>
+                      <span className="text-purple-600">{resilienceDebtScore}%</span>
                     </div>
-                    <Progress value={95} className="h-2 bg-purple-100" />
+                    <Progress value={resilienceDebtScore} className="h-2 bg-purple-100" />
                   </div>
                 </div>
 

@@ -3,30 +3,85 @@
 import { useStore } from "@/store/useStore"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { QrCode, ScanLine, X, AlertTriangle, ArrowRight, Zap, AlertCircle } from "lucide-react"
+import { QrCode, ScanLine, X, AlertTriangle, ArrowRight, Zap, AlertCircle, ChevronDown, Coffee, ShoppingBag, Gamepad2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { TopUpModal } from "./TopUpModal"
+import { cn } from "@/lib/utils"
 
 export function Scanner() {
   const router = useRouter()
-  const { user, addTransaction, safeDailySpend } = useStore()
+  const { user, addTransaction, safeDailySpend, initialSafeDaily, transactions } = useStore()
+  
   const [scannedItem, setScannedItem] = useState<{ merchant: string, amount: number, category: string } | null>(null)
   const [isWarning, setIsWarning] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isFailed, setIsFailed] = useState(false)
   const [showTopUpModal, setShowTopUpModal] = useState(false)
 
-  const handleDemoScan = () => {
-    // Simulate scanning an unplanned clothing item
+  // Calculate remaining daily spending quota
+  const todayStr = new Date().toDateString()
+  const todayExpenses = transactions
+    .filter(t => t.type === 'expense' && new Date(t.date).toDateString() === todayStr)
+    .reduce((sum, t) => sum + t.amount, 0)
+  
+  const originalQuota = initialSafeDaily || 15.0
+  const currentQuotaRemaining = originalQuota - todayExpenses
+
+  const scanAmount = scannedItem ? scannedItem.amount : 0
+  const quotaAfterPurchase = currentQuotaRemaining - scanAmount
+
+  // Spending Sense Alert Style Level:
+  // 1. Green - when remaining spending quota is more than 50% than original quota
+  // 2. Yellow - when it below 50% or the payment causing the remaining quota below 50%
+  // 3. Red - exceed the quota
+  const alertColor = quotaAfterPurchase < 0 
+    ? "red" 
+    : quotaAfterPurchase < (0.5 * originalQuota) 
+      ? "yellow" 
+      : "green"
+
+  const alertStyles = {
+    green: {
+      bg: "bg-emerald-500/10",
+      border: "border-b border-emerald-500/20",
+      text: "text-emerald-600",
+      darkText: "text-emerald-800/80",
+      iconBg: "bg-emerald-500/20"
+    },
+    yellow: {
+      bg: "bg-amber-500/10",
+      border: "border-b border-amber-500/20",
+      text: "text-amber-600",
+      darkText: "text-amber-800/80",
+      iconBg: "bg-amber-500/20"
+    },
+    red: {
+      bg: "bg-rose-500/10",
+      border: "border-b border-rose-500/20",
+      text: "text-rose-600",
+      darkText: "text-rose-800/80",
+      iconBg: "bg-rose-500/20"
+    }
+  }[alertColor]
+
+  // Custom Simulator States
+  const [customMerchant, setCustomMerchant] = useState("")
+  const [customAmount, setCustomAmount] = useState("")
+  const [customCategory, setCustomCategory] = useState("Shopping")
+
+  const handleCustomScan = () => {
+    const amt = parseFloat(customAmount)
+    if (isNaN(amt) || amt <= 0) return
+
     setScannedItem({
-      merchant: "H&M Stores",
-      amount: 150.00,
-      category: "Shopping"
+      merchant: customMerchant.trim() || "Local Shop",
+      amount: amt,
+      category: customCategory
     })
-    setIsWarning(true) // Immediately trigger the AI interception
+    setIsWarning(true)
   }
 
   const handleConfirmPay = () => {
@@ -78,20 +133,128 @@ export function Scanner() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 z-10 flex flex-col justify-end p-6 pb-12 space-y-4">
+      <div className="flex-1 z-10 flex flex-col justify-end p-4 pb-12">
         
         <AnimatePresence>
           {!scannedItem && (
             <motion.div 
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-              className="w-full"
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: 20 }}
+              className="w-full max-h-[80vh] overflow-y-auto scrollbar-hide space-y-4 bg-slate-950/80 backdrop-blur-xl p-5 rounded-3xl border border-white/5 shadow-2xl"
             >
-              <Button 
-                onClick={handleDemoScan}
-                className="w-full h-14 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-2xl shadow-xl flex gap-2"
-              >
-                <QrCode className="w-5 h-5" /> Demo Scan: RM150 Clothing
-              </Button>
+              <div className="text-center space-y-1 pb-1">
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider">QR Code Simulator</h2>
+                <p className="text-[10px] text-slate-400">Trigger quick QR demo checkout or build a custom scan value below</p>
+              </div>
+
+              {/* Quick Demos Panel */}
+              <div className="space-y-2">
+                <p className="text-[9px] uppercase font-bold tracking-wider text-slate-400 px-1">Quick-test Demos</p>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { merchant: "Starbucks Coffee", amount: 18.50, category: "Food", icon: Coffee, color: "text-emerald-400 bg-emerald-500/10" },
+                    { merchant: "H&M Stores", amount: 150.00, category: "Shopping", icon: ShoppingBag, color: "text-purple-400 bg-purple-500/10" },
+                    { merchant: "Steam Gaming", amount: 89.00, category: "Entertainment", icon: Gamepad2, color: "text-amber-400 bg-amber-500/10" },
+                  ].map((demo, idx) => {
+                    const IconComp = demo.icon
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setScannedItem({
+                            merchant: demo.merchant,
+                            amount: demo.amount,
+                            category: demo.category
+                          })
+                          setIsWarning(true)
+                        }}
+                        className="w-full h-12 justify-between bg-white/5 border border-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-white rounded-xl px-3.5 flex items-center"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", demo.color)}>
+                            <IconComp className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs font-bold leading-tight">{demo.merchant}</p>
+                            <p className="text-[9px] text-slate-400 leading-tight">{demo.category}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-black text-primary">RM {demo.amount.toFixed(2)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Custom Checkout Creator */}
+              <div className="space-y-2 pt-1 border-t border-white/5">
+                <p className="text-[9px] uppercase font-bold tracking-wider text-slate-400 px-1">Simulate Custom Checkout</p>
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-3.5 space-y-3">
+                  
+                  {/* Merchant name input */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Merchant Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Kedai Tomyam Jaya"
+                      value={customMerchant}
+                      onChange={(e) => setCustomMerchant(e.target.value)}
+                      className="bg-slate-900/60 border border-white/10 text-xs text-white rounded-xl h-9 px-3 focus:outline-none focus:border-primary/50 placeholder-slate-500 font-medium"
+                    />
+                  </div>
+
+                  {/* Amount & Category select */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Amount (RM)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={customAmount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || parseFloat(val) >= 0) {
+                            setCustomAmount(val);
+                          }
+                        }}
+                        className="bg-slate-900/60 border border-white/10 text-xs text-white rounded-xl h-9 px-3 focus:outline-none focus:border-primary/50 placeholder-slate-500 font-bold"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
+                      <div className="relative">
+                        <select
+                          value={customCategory}
+                          onChange={(e) => setCustomCategory(e.target.value)}
+                          className="w-full bg-slate-900/60 border border-white/10 text-xs text-white rounded-xl h-9 pl-3 pr-8 focus:outline-none focus:border-primary/50 appearance-none cursor-pointer font-bold"
+                        >
+                          <option value="Food" className="bg-slate-900">🍔 Food</option>
+                          <option value="Shopping" className="bg-slate-900">🛍️ Shopping</option>
+                          <option value="Entertainment" className="bg-slate-900">🎮 Entertainment</option>
+                          <option value="Transport" className="bg-slate-900">🚗 Transport</option>
+                          <option value="Bills" className="bg-slate-900">⚡ Bills</option>
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Simulate Scan Button */}
+                  <Button
+                    onClick={handleCustomScan}
+                    disabled={!customAmount}
+                    className="w-full h-10 bg-primary hover:bg-primary/95 text-slate-900 font-extrabold rounded-xl text-xs gap-1.5 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all mt-1"
+                  >
+                    <QrCode className="w-4 h-4" /> Scan Custom Code
+                  </Button>
+
+                </div>
+              </div>
+
             </motion.div>
           )}
 
@@ -102,15 +265,15 @@ export function Scanner() {
               className="w-full"
             >
               <Card className="bg-white border-none shadow-2xl rounded-3xl overflow-hidden">
-                <div className="bg-amber-500/10 p-4 flex gap-3 border-b border-amber-500/20">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-600 shrink-0">
+                <div className={cn(alertStyles.bg, "p-4 flex gap-3", alertStyles.border)}>
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", alertStyles.iconBg, alertStyles.text)}>
                     <Zap className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-amber-600">Spending Sense Alert</h3>
-                    <p className="text-xs text-amber-800/80 leading-relaxed mt-1">
-                      This RM{scannedItem.amount} purchase matches your impulse buying pattern. 
-                      Your safe daily limit is RM{safeDailySpend.toFixed(2)}. Proceeding will lower your Resilience Score.
+                    <h3 className={cn("text-sm font-bold", alertStyles.text)}>Spending Sense Alert</h3>
+                    <p className={cn("text-xs leading-relaxed mt-1", alertStyles.darkText)}>
+                      This RM{scannedItem.amount.toFixed(2)} purchase matches your impulse buying pattern. 
+                      Your remaining safe spending quota is RM{currentQuotaRemaining.toFixed(2)}. Proceeding will lower your Resilience Score.
                     </p>
                   </div>
                 </div>

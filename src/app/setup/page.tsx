@@ -23,7 +23,8 @@ import {
   Layers,
   Briefcase,
   Wallet,
-  Info
+  Info,
+  Sparkles
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
@@ -178,12 +179,37 @@ export default function SetupPage() {
         }
       }
 
+      // Calculate actual days remaining from today (setup day) until the next expected allowance date (finalResetDate)
+      const getDaysRemainingToAllowance = () => {
+        if (incomeSource === "fixed" && fixedFrequency === "weekly" && weeklyPayDay) {
+          const daysMap: Record<string, number> = {
+            sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+          };
+          const targetIndex = daysMap[weeklyPayDay.toLowerCase()] ?? 5;
+          const today = new Date();
+          const todayIndex = today.getDay();
+          let diff = targetIndex - todayIndex;
+          if (diff <= 0) diff += 7;
+          return diff;
+        }
+
+        if (!finalResetDate) return durationDays;
+        const today = new Date();
+        const nextDate = new Date(finalResetDate);
+        const diffTime = nextDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? diffDays : durationDays;
+      }
+
+      const daysUntilAllowance = getDaysRemainingToAllowance();
+
       // Calculate dynamic daily safe budget limit based on:
       // (Allowance Amount - Commitments for the relative period) / Period Duration
       const periodMonths = durationDays / 30
       const totalCommitmentsForPeriod = totalCommitments * periodMonths
-      const netFunds = Math.max(0, totalAmount - totalCommitmentsForPeriod)
-      const calculatedDailySafe = Number((netFunds / durationDays).toFixed(2))
+      const allowanceForPeriod = (incomeSource === "fixed" && fixedFrequency === "weekly") ? fixedAmount : totalAmount
+      const netFunds = Math.max(0, allowanceForPeriod - totalCommitmentsForPeriod)
+      const calculatedDailySafe = Number((netFunds / daysUntilAllowance).toFixed(2))
 
       // Determine the starting balance dynamically to reflect setup details on the dashboard
       let startBalance = 800
@@ -239,6 +265,9 @@ export default function SetupPage() {
         },
         bills: initialBills as any[],
         safeDailySpend: calculatedDailySafe > 0 ? calculatedDailySafe : 15.0,
+        initialSafeDaily: calculatedDailySafe > 0 ? calculatedDailySafe : 15.0,
+        pendingMainGoal: selectedGoal,
+        hasNotificationSave: true,
       }))
 
       router.push("/dashboard")
@@ -781,6 +810,7 @@ export default function SetupPage() {
                       { name: "Rent Buffer", icon: Home },
                       { name: "Travel", icon: Plane },
                       { name: "Investment Starter", icon: TrendingUp },
+                      { name: "Other", icon: Sparkles },
                     ].map((goal) => {
                       const IconComponent = goal.icon
                       const isSelected = selectedGoal === goal.name
